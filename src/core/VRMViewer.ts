@@ -306,6 +306,73 @@ export class VRMViewer {
   }
 
   /**
+   * VRM1系のHTMLImageElementサムネイル画像をDataURLに変換する
+   */
+  private extractVRM1ThumbnailImage(thumbnailImage: any): string | null {
+    if (!thumbnailImage) {
+      return null;
+    }
+
+    try {
+      // HTMLImageElementの場合
+      if (thumbnailImage instanceof HTMLImageElement) {
+        console.log('VRM1サムネイル: HTMLImageElement処理開始', {
+          src: thumbnailImage.src,
+          naturalWidth: thumbnailImage.naturalWidth,
+          naturalHeight: thumbnailImage.naturalHeight
+        });
+
+        // 既にDataURLの場合はそのまま返す
+        if (thumbnailImage.src.startsWith('data:image/')) {
+          console.log('VRM1サムネイル: 既にDataURL形式');
+          return thumbnailImage.src;
+        }
+
+        // CanvasでHTMLImageElementをDataURLに変換
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (ctx && thumbnailImage.naturalWidth > 0 && thumbnailImage.naturalHeight > 0) {
+          canvas.width = thumbnailImage.naturalWidth;
+          canvas.height = thumbnailImage.naturalHeight;
+          
+          console.log('VRM1サムネイル: Canvas設定完了', {
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height
+          });
+          
+          // HTMLImageElementをCanvasに描画
+          ctx.drawImage(thumbnailImage, 0, 0);
+          
+          // DataURLに変換
+          const dataURL = canvas.toDataURL('image/png');
+          console.log('VRM1サムネイル: DataURL生成完了', {
+            dataURLLength: dataURL.length,
+            dataURLPrefix: dataURL.substring(0, 50)
+          });
+          
+          return dataURL;
+        } else {
+          console.error('VRM1サムネイル: Canvas 2Dコンテキストの取得に失敗または画像サイズが無効');
+        }
+      }
+      
+      // 文字列の場合（既にDataURLまたはURL）
+      if (typeof thumbnailImage === 'string') {
+        console.log('VRM1サムネイル: 文字列処理', thumbnailImage.substring(0, 50));
+        return thumbnailImage;
+      }
+      
+      console.warn('VRM1サムネイル: 未対応の形式', {
+        imageType: thumbnailImage ? thumbnailImage.constructor.name : 'null'
+      });
+      return null;
+    } catch (error) {
+      console.error('VRM1サムネイル抽出エラー:', error);
+      return null;
+    }
+  }
+
+  /**
    * VRM0系のtextureプロパティからサムネイル画像を抽出する
    */
   private extractVRM0ThumbnailImage(texture: any): string | null {
@@ -394,8 +461,8 @@ export class VRMViewer {
     // サムネイル画像の処理
     let thumbnailImage = null;
     if (detectedVersion.startsWith('1.')) {
-      // VRM1系の場合
-      thumbnailImage = vrmMeta?.thumbnailImage || null;
+      // VRM1系の場合、HTMLImageElementをDataURLに変換
+      thumbnailImage = this.extractVRM1ThumbnailImage(vrmMeta?.thumbnailImage);
     } else if (detectedVersion.startsWith('0.')) {
       // VRM0系の場合、textureプロパティからサムネイル画像を抽出
       thumbnailImage = this.extractVRM0ThumbnailImage(vrmMeta?.texture);

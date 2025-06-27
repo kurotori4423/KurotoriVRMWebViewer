@@ -121,12 +121,14 @@
   - [x] ×ボタン、ESCキー、背景クリックでの閉じる機能
 - [x] モデル名、作者、ライセンス情報の表示
 - [x] サムネイル画像の表示（実装完了）
-  - [x] VRM1系のサムネイル画像表示対応
+  - [x] **VRM1系のサムネイル画像表示対応（完全解決）** ✨
+    - [x] HTMLImageElementをCanvas APIでDataURLに変換
+    - [x] extractVRM1ThumbnailImage関数でVRM1統一処理実装
   - [x] **VRM0系のサムネイル画像表示対応（完全解決）** ✨
     - [x] textureプロパティからImageBitmap/HTMLImageElement対応
     - [x] extractVRM0ThumbnailImage関数でcanvas変換実装
-    - [x] VRM0/VRM1両方でのサムネイル表示動作確認完了
     - [x] **main.ts表示バグ修正**: thumbnailImage.src → thumbnailImageに修正してDataURL表示を正常化
+  - [x] **VRM0/VRM1統一サムネイル処理完成**: 両方ともDataURL文字列で統一し、美しいサムネイル表示を実現
 - [x] VRMバージョン情報の表示
   - [x] VRM0/VRM1の自動検知とメタ情報正規化
   - [x] バージョンごとの適切なメタ情報項目表示
