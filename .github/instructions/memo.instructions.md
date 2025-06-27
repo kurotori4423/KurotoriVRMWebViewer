@@ -447,3 +447,179 @@ else if (vrmMeta?.metaVersion !== undefined ||
 
 5. **次のステップ**
    - フェーズ4: ポージング機能の実装
+
+## TransformControlsの実装ベストプラクティス
+
+### 実装背景（2025年6月27日）
+フェーズ3.2のライト調整機能実装でTransformControlsを活用し、プロキシオブジェクトとライト回転の同期で重要な知見を得た。フェーズ4のボーン操作でも多用するため、今回の間違いと正しい実装方法を記録。
+
+### ❌ 間違った実装パターン
+
+#### 1. 初期状態の管理タイミス
+```typescript
+// ❌ BAD: enableメソッドで一度だけ初期状態を保存
+enableDirectionalLightTransform(): void {
+  // プロキシの初期クォータニオンを保存（現在の状態を保存）
+  this.proxyInitialQuaternion = this.directionalLightProxy.quaternion.clone();
+}
+
+// ❌ BAD: changeイベントで現在のライト状態から計算
+this.lightTransformControls.addEventListener('change', () => {
+  // ライトの元の方向（position -> target）を計算
+  const originalDirection = new THREE.Vector3();
+  originalDirection.subVectors(this.directionalLight.target.position, this.directionalLight.position).normalize();
+  // ↑ 毎回現在の状態から計算するため、差分が蓄積される
+});
+```
+
+#### 2. changeイベントでの過敏な反応
+```typescript
+// ❌ BAD: 全てのchangeイベントで処理
+this.lightTransformControls.addEventListener('change', () => {
+  // マウスオーバーでも処理されてしまう
+});
+```
+
+### ✅ 正しい実装パターン
+
+#### 1. ドラッグ開始時の初期状態保存
+```typescript
+// ✅ GOOD: dragging-changedイベントでドラッグ開始時に保存
+this.lightTransformControls.addEventListener('dragging-changed', (event) => {
+  this.controls.enabled = !event.value;
+  isDragging = event.value as boolean;
+  
+  // ✅ ドラッグ開始時に初期状態を保存
+  if (isDragging && this.directionalLightProxy) {
+    // プロキシの初期回転状態を保存
+    this.proxyInitialQuaternion = this.directionalLightProxy.quaternion.clone();
+    
+    // ライトの初期方向を保存
+    this.lightInitialDirection = new THREE.Vector3();
+    this.lightInitialDirection.subVectors(
+      this.directionalLight.target.position, 
+      this.directionalLight.position
+    ).normalize();
+  }
+});
+```
+
+#### 2. ドラッグ中のみの処理とベースライン計算
+```typescript
+// ✅ GOOD: ドラッグ中のみ処理し、保存された初期状態から差分計算
+this.lightTransformControls.addEventListener('change', () => {
+  // ✅ ドラッグ中のみライトの回転を更新
+  if (!isDragging) {
+    return;
+  }
+  
+  if (this.directionalLightProxy && 
+      this.lightTransformControls?.object === this.directionalLightProxy && 
+      this.proxyInitialQuaternion && 
+      this.lightInitialDirection) {
+    
+    // ✅ 保存された初期状態から差分を計算
+    const currentQuaternion = this.directionalLightProxy.quaternion.clone();
+    const initialQuaternion = this.proxyInitialQuaternion.clone();
+    
+    // 差分クォータニオンを計算（current * initial^-1）
+    const inverseInitial = initialQuaternion.clone().invert();
+    const deltaQuaternion = currentQuaternion.clone().multiply(inverseInitial);
+    
+    // ✅ 保存されたライトの初期方向に差分回転を適用
+    const newDirection = this.lightInitialDirection.clone().applyQuaternion(deltaQuaternion).normalize();
+    
+    // ライトのtargetの位置を更新
+    const lightPosition = this.directionalLight.position.clone();
+    const targetPosition = lightPosition.clone().add(newDirection.multiplyScalar(5));
+    this.directionalLight.target.position.copy(targetPosition);
+    this.directionalLight.target.updateMatrixWorld();
+  }
+});
+```
+
+### 🔧 重要な技術的ポイント
+
+#### 1. プロキシオブジェクトの設計
+```typescript
+// ✅ 視覚的に確認できるワイヤーフレーム表示
+const proxyGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+const proxyMaterial = new THREE.MeshBasicMaterial({ 
+  color: 0xff6600,  // オレンジ色
+  wireframe: true,  // ワイヤーフレーム表示
+  transparent: true,
+  opacity: 0.7
+});
+this.directionalLightProxy = new THREE.Mesh(proxyGeometry, proxyMaterial);
+```
+
+#### 2. 初期状態クリアの管理
+```typescript
+// ✅ 無効化時とリセット時の両方で初期状態をクリア
+disableLightTransform(): void {
+  if (this.lightTransformControls) {
+    this.lightTransformControls.detach();
+    this.lightTransformControls.enabled = false;
+  }
+  // ✅ プロキシとライトの初期状態をクリア
+  this.proxyInitialQuaternion = null;
+  this.lightInitialDirection = null;
+  this.setLightProxyVisible(false);
+}
+```
+
+#### 3. 数値計算のエラー防止
+```typescript
+// ✅ Math.acosの範囲外エラー防止
+const angle = 2 * Math.acos(Math.abs(Math.min(1.0, Math.abs(deltaQuaternion.w))));
+if (angle < 0.001) {
+  return; // 微小な変化は無視
+}
+```
+
+### 📋 ボーン操作への応用方針
+
+#### 1. 複数プロキシオブジェクトの管理
+```typescript
+// 各ボーンに対応するプロキシオブジェクト
+private boneProxies: Map<string, THREE.Mesh> = new Map();
+private boneInitialQuaternions: Map<string, THREE.Quaternion> = new Map();
+private boneInitialDirections: Map<string, THREE.Vector3> = new Map();
+```
+
+#### 2. ボーン選択と初期状態管理
+```typescript
+// ボーン選択時の初期状態保存
+selectBone(boneName: string): void {
+  // 現在のボーンの状態を保存
+  const bone = this.getCurrentBone(boneName);
+  if (bone) {
+    this.boneInitialQuaternions.set(boneName, bone.quaternion.clone());
+    // その他の初期状態保存
+  }
+}
+```
+
+#### 3. 階層構造への対応
+```typescript
+// 親ボーンとの関係を考慮した回転適用
+applyBoneRotation(boneName: string, deltaQuaternion: THREE.Quaternion): void {
+  const bone = this.getCurrentBone(boneName);
+  const initialQuaternion = this.boneInitialQuaternions.get(boneName);
+  
+  if (bone && initialQuaternion) {
+    // 階層構造を考慮した回転計算
+    // ...
+  }
+}
+```
+
+### 🎯 成功のポイント
+
+1. **初期状態の保存タイミング**: enable時ではなく、dragging開始時
+2. **ベースライン計算**: 現在の状態ではなく、保存された初期状態から差分計算
+3. **状態管理**: 適切なタイミングでの初期状態クリア
+4. **視覚的フィードバック**: ワイヤーフレーム表示による操作対象の明確化
+5. **エラー防止**: 数値計算の範囲チェックと微小変化の無視
+
+この知見により、フェーズ4のボーン操作実装で同様の問題を回避し、正確で直感的な操作を実現できる。

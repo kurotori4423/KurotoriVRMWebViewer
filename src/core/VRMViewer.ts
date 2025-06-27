@@ -25,8 +25,12 @@ export class VRMViewer {
   private directionalLight: THREE.DirectionalLight;
   private rimLight: THREE.DirectionalLight;
   private directionalLightHelper: THREE.DirectionalLightHelper | null = null;
+  private directionalLightProxy: THREE.Mesh | null = null; // ライト操作用の3Dオブジェクト（ワイヤーフレーム表示）
   private lightTransformControls: TransformControls | null = null;
   private lightHelpersVisible: boolean = false;
+  private proxyVisible: boolean = true; // プロキシオブジェクトの表示状態（一時的にtrue）
+  private proxyInitialQuaternion: THREE.Quaternion | null = null; // プロキシの初期回転状態（ドラッグ開始時）
+  private lightInitialDirection: THREE.Vector3 | null = null; // ライトの初期方向（ドラッグ開始時）
   
   // VRM関連
   private gltfLoader: GLTFLoader;
@@ -110,7 +114,7 @@ export class VRMViewer {
 
     // ディレクショナルライト（太陽光のような平行光）
     this.directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    this.directionalLight.position.set(1, 2, 3);
+    this.directionalLight.position.set(0, 3, 0); // +Y軸上に配置
     this.directionalLight.castShadow = true;
     this.directionalLight.shadow.mapSize.setScalar(1024);
     this.directionalLight.shadow.camera.near = 0.1;
@@ -139,16 +143,105 @@ export class VRMViewer {
     this.directionalLightHelper.visible = this.lightHelpersVisible;
     this.scene.add(this.directionalLightHelper);
     
+    // ライト操作用のプロキシオブジェクトを作成（一時的にワイヤーフレーム表示）
+    const proxyGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const proxyMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xff6600,  // オレンジ色
+      wireframe: true,  // ワイヤーフレーム表示
+      transparent: true,
+      opacity: 0.7
+    });
+    this.directionalLightProxy = new THREE.Mesh(proxyGeometry, proxyMaterial);
+    // プロキシの位置をライトと同じ位置に設定
+    this.directionalLightProxy.position.copy(this.directionalLight.position);
+    // プロキシの回転をアイデンティティに初期化
+    this.directionalLightProxy.quaternion.set(0, 0, 0, 1);
+    // プロキシの可視性を設定
+    this.directionalLightProxy.visible = this.proxyVisible;
+    this.scene.add(this.directionalLightProxy);
+    
     // TransformControlsの作成
     this.lightTransformControls = new TransformControls(this.camera, this.renderer.domElement);
     this.lightTransformControls.setMode('rotate'); // 回転モードに設定
     this.lightTransformControls.enabled = false; // 初期状態では無効
-    this.scene.add(this.lightTransformControls);
+    
+    // TransformControlsのギズモをシーンに追加
+    const gizmo = this.lightTransformControls.getHelper();
+    this.scene.add(gizmo);
     
     // TransformControlsのイベント設定
+    let isDragging = false;
+    
     this.lightTransformControls.addEventListener('dragging-changed', (event) => {
       // TransformControls使用中はOrbitControlsを無効化
       this.controls.enabled = !event.value;
+      isDragging = event.value as boolean;
+      
+      // ドラッグ開始時に初期状態を保存
+      if (isDragging && this.directionalLightProxy) {
+        // プロキシの初期回転状態を保存
+        this.proxyInitialQuaternion = this.directionalLightProxy.quaternion.clone();
+        
+        // ライトの初期方向を保存
+        this.lightInitialDirection = new THREE.Vector3();
+        this.lightInitialDirection.subVectors(
+          this.directionalLight.target.position, 
+          this.directionalLight.position
+        ).normalize();
+        
+        console.log('ドラッグ開始 - 初期状態保存:', {
+          proxyQuaternion: this.proxyInitialQuaternion,
+          lightDirection: this.lightInitialDirection
+        });
+      }
+    });
+    
+    // TransformControlsの変更イベントでライトの向きを更新（ドラッグ中のみ）
+    this.lightTransformControls.addEventListener('change', () => {
+      // ドラッグ中のみライトの回転を更新
+      if (!isDragging) {
+        return;
+      }
+      
+      if (this.directionalLightProxy && 
+          this.lightTransformControls?.object === this.directionalLightProxy && 
+          this.proxyInitialQuaternion && 
+          this.lightInitialDirection) {
+        
+        // プロキシの現在の回転から初期回転の差分を計算
+        const currentQuaternion = this.directionalLightProxy.quaternion.clone();
+        const initialQuaternion = this.proxyInitialQuaternion.clone();
+        
+        // 差分クォータニオンを計算（current * initial^-1）
+        const inverseInitial = initialQuaternion.clone().invert();
+        const deltaQuaternion = currentQuaternion.clone().multiply(inverseInitial);
+        
+        // 差分が非常に小さい場合は何もしない
+        const angle = 2 * Math.acos(Math.abs(Math.min(1.0, Math.abs(deltaQuaternion.w))));
+        if (angle < 0.001) {
+          return;
+        }
+        
+        // 保存されたライトの初期方向に差分回転を適用
+        const newDirection = this.lightInitialDirection.clone().applyQuaternion(deltaQuaternion).normalize();
+        
+        // ライトのtargetの位置を更新
+        const lightPosition = this.directionalLight.position.clone();
+        const targetPosition = lightPosition.clone().add(newDirection.multiplyScalar(5));
+        this.directionalLight.target.position.copy(targetPosition);
+        this.directionalLight.target.updateMatrixWorld();
+        
+        // ライトヘルパーを更新
+        if (this.directionalLightHelper) {
+          this.directionalLightHelper.update();
+        }
+        
+        console.log('ライト方向更新:', {
+          deltaAngle: angle * (180 / Math.PI),
+          newDirection: newDirection,
+          targetPosition: targetPosition
+        });
+      }
     });
   }
 
@@ -220,6 +313,11 @@ export class VRMViewer {
       
       // コントロールの更新
       this.controls.update();
+      
+      // ライトヘルパーの更新（表示されている場合のみ）
+      if (this.lightHelpersVisible && this.directionalLightHelper) {
+        this.directionalLightHelper.update();
+      }
       
       // レンダリング
       this.renderer.render(this.scene, this.camera);
@@ -1399,8 +1497,30 @@ export class VRMViewer {
     this.setRimLightColor(0x66ccff);
     
     // ライト位置もリセット
-    this.directionalLight.position.set(1, 2, 3);
+    this.directionalLight.position.set(0, 3, 0); // +Y軸上に配置
     this.rimLight.position.set(-1, 1, -2);
+    
+    // ライトのターゲットもリセット
+    this.directionalLight.target.position.set(0, 0, 0);
+    this.directionalLight.target.updateMatrixWorld();
+    
+    // プロキシオブジェクトの位置と向きもリセット
+    if (this.directionalLightProxy) {
+      // プロキシの位置をライトと同じ位置に更新（新しい位置）
+      this.directionalLightProxy.position.set(0, 3, 0);
+      
+      // プロキシの回転をアイデンティティにリセット
+      this.directionalLightProxy.quaternion.set(0, 0, 0, 1);
+      
+      // プロキシとライトの初期状態もクリア
+      this.proxyInitialQuaternion = null;
+      this.lightInitialDirection = null;
+    }
+    
+    // ライトヘルパーを更新
+    if (this.directionalLightHelper) {
+      this.directionalLightHelper.update();
+    }
     
     // TransformControlsを無効化
     this.disableLightTransform();
@@ -1481,6 +1601,10 @@ export class VRMViewer {
     this.lightHelpersVisible = visible;
     if (this.directionalLightHelper) {
       this.directionalLightHelper.visible = visible;
+      if (visible) {
+        // 表示する場合は最新の状態に更新
+        this.directionalLightHelper.update();
+      }
     }
   }
 
@@ -1496,9 +1620,33 @@ export class VRMViewer {
    * 方向性ライトのTransformControlsを有効化
    */
   enableDirectionalLightTransform(): void {
-    if (this.lightTransformControls && this.directionalLight) {
-      this.lightTransformControls.attach(this.directionalLight);
+    if (this.lightTransformControls && this.directionalLightProxy) {
+      // プロキシを表示する
+      this.setLightProxyVisible(true);
+      
+      // プロキシの位置をライトと同じ位置に更新
+      this.directionalLightProxy.position.copy(this.directionalLight.position);
+      
+      // 現在のライト方向を取得して、プロキシの回転を設定
+      const lightDirection = new THREE.Vector3();
+      lightDirection.subVectors(this.directionalLight.target.position, this.directionalLight.position).normalize();
+      
+      // ライト方向から回転を計算（デフォルトの-Z方向から現在の方向への回転）
+      const defaultDirection = new THREE.Vector3(0, 0, -1);
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(defaultDirection, lightDirection);
+      
+      // プロキシに回転を適用
+      this.directionalLightProxy.quaternion.copy(quaternion);
+      
+      // プロキシオブジェクトをギズモにattach
+      this.lightTransformControls.attach(this.directionalLightProxy);
       this.lightTransformControls.enabled = true;
+      
+      // ライトヘルパーを更新
+      if (this.directionalLightHelper) {
+        this.directionalLightHelper.update();
+      }
     }
   }
 
@@ -1510,6 +1658,11 @@ export class VRMViewer {
       this.lightTransformControls.detach();
       this.lightTransformControls.enabled = false;
     }
+    // プロキシとライトの初期状態をクリア
+    this.proxyInitialQuaternion = null;
+    this.lightInitialDirection = null;
+    // プロキシを非表示にする
+    this.setLightProxyVisible(false);
   }
 
   /**
@@ -1517,6 +1670,25 @@ export class VRMViewer {
    * @returns 選択されているかどうか
    */
   isDirectionalLightSelected(): boolean {
-    return this.lightTransformControls?.object === this.directionalLight;
+    return this.lightTransformControls?.object === this.directionalLightProxy;
+  }
+
+  /**
+   * ライトプロキシオブジェクトの表示/非表示を切り替え（デバッグ用）
+   * @param visible 表示するかどうか
+   */
+  setLightProxyVisible(visible: boolean): void {
+    this.proxyVisible = visible;
+    if (this.directionalLightProxy) {
+      this.directionalLightProxy.visible = visible;
+    }
+  }
+
+  /**
+   * ライトプロキシオブジェクトの表示状態を取得（デバッグ用）
+   * @returns 表示されているかどうか
+   */
+  isLightProxyVisible(): boolean {
+    return this.proxyVisible;
   }
 }
