@@ -443,7 +443,7 @@ export class VRMViewer {
         
         // 複数体の場合は少しずらして配置
         if (this.vrmModels.length > 1) {
-          const spacing = 2.0;
+          const spacing = 2.0; // 元の2mに戻す
           const index = this.vrmModels.length - 1;
           vrm.scene.position.x = index * spacing - (this.vrmModels.length - 1) * spacing * 0.5;
         }
@@ -531,7 +531,7 @@ export class VRMViewer {
    * 全モデルを再配置
    */
   private repositionAllModels(): void {
-    const spacing = 2.0;
+    const spacing = 2.0; // 元の2mに戻す
     this.vrmModels.forEach((vrm, index) => {
       vrm.scene.position.x = index * spacing - (this.vrmModels.length - 1) * spacing * 0.5;
     });
@@ -632,26 +632,29 @@ export class VRMViewer {
       opacity: 0.3
     });
 
-    // モデルのワールド境界ボックスを直接計算
-    const worldBox = new THREE.Box3().setFromObject(vrm.scene);
-    const worldCenter = worldBox.getCenter(new THREE.Vector3());
-    const size = worldBox.getSize(new THREE.Vector3());
+    // 固定サイズのアウトラインボックスを作成（VRMの標準サイズに基づく）
+    const standardSize = { x: 2.4, y: 2.0, z: 1.2 }; // VRMの一般的なサイズ
+    const centerOffset = { x: 0, y: 1.0, z: 0 }; // VRMの一般的な中心オフセット
 
     // アウトライン用のボックスジオメトリ作成
     const outlineGeometry = new THREE.BoxGeometry(
-      size.x * 1.1,
-      size.y * 1.1, 
-      size.z * 1.1
+      standardSize.x * 1.1,
+      standardSize.y * 1.1, 
+      standardSize.z * 1.1
     );
 
     this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
     
-    // アウトラインの位置をワールド境界ボックスの中心に設定
-    this.outlineMesh.position.copy(worldCenter);
+    // アウトラインの位置 = モデルの現在位置 + 中心オフセット
+    this.outlineMesh.position.set(
+      vrm.scene.position.x + centerOffset.x,
+      vrm.scene.position.y + centerOffset.y,
+      vrm.scene.position.z + centerOffset.z
+    );
     
     this.scene.add(this.outlineMesh);
     
-    console.log(`アウトライン表示: モデル位置(${vrm.scene.position.x.toFixed(2)}, ${vrm.scene.position.y.toFixed(2)}, ${vrm.scene.position.z.toFixed(2)}), ワールド中心(${worldCenter.x.toFixed(2)}, ${worldCenter.y.toFixed(2)}, ${worldCenter.z.toFixed(2)}), サイズ(${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)})`);
+    console.log(`アウトライン表示修正版3: モデル位置(${vrm.scene.position.x.toFixed(2)}, ${vrm.scene.position.y.toFixed(2)}, ${vrm.scene.position.z.toFixed(2)}), 中心オフセット(${centerOffset.x.toFixed(2)}, ${centerOffset.y.toFixed(2)}, ${centerOffset.z.toFixed(2)}), 最終位置(${this.outlineMesh.position.x.toFixed(2)}, ${this.outlineMesh.position.y.toFixed(2)}, ${this.outlineMesh.position.z.toFixed(2)})`);
   }
 
   /**
