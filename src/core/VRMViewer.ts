@@ -223,6 +223,9 @@ export class VRMViewer {
           proxyQuaternion: this.proxyInitialQuaternion,
           lightDirection: this.lightInitialDirection
         });
+      } else if (!isDragging) {
+        // ドラッグ終了時の処理
+        console.log('ドラッグ終了');
       }
     });
     
@@ -321,8 +324,8 @@ export class VRMViewer {
     // ウィンドウリサイズ対応
     window.addEventListener('resize', this.onWindowResize.bind(this));
     
-    // 3Dビューでのライト選択対応
-    this.canvas.addEventListener('click', this.onCanvasClick.bind(this));
+    // 3Dビューでのライト選択対応（mousedownで処理することで、ドラッグ後のclickイベントの影響を受けない）
+    this.canvas.addEventListener('mousedown', this.onCanvasMouseDown.bind(this));
   }
 
   /**
@@ -340,11 +343,13 @@ export class VRMViewer {
   /**
    * キャンバスクリックイベントハンドラ（3Dビューでのライト選択）
    */
-  private onCanvasClick(event: MouseEvent): void {
+  private onCanvasMouseDown(event: MouseEvent): void {
     // TransformControls使用中は無効化（干渉防止）
     if (this.lightTransformControls && this.lightTransformControls.dragging) {
       return;
     }
+    
+    // mousedownイベントでの処理なので、TransformControls終了後の無視ロジックは不要
 
     // マウス座標を正規化デバイス座標系に変換
     const rect = this.canvas.getBoundingClientRect();
@@ -374,15 +379,7 @@ export class VRMViewer {
         }
       }
     } else {
-      // 空のスペースがクリックされた場合、現在ライトが選択されていない場合のみ何もしない
-      // 既にライトが選択されている場合は選択を維持する
-      if (this.lightTransformControls && this.lightTransformControls.enabled) {
-        // ライトが既に選択されている場合は何もしない（選択を維持）
-        console.log('ライトが選択中につき、空のスペースクリックは無視されました');
-        return;
-      }
-      
-      // ライトが選択されていない場合のみ、選択解除処理を実行
+      // 空のスペースがクリックされた場合、ライト選択を解除
       console.log('ライト選択が3Dビューで解除されました');
       this.disableLightTransform();
       // コールバックでGUIに通知
