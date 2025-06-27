@@ -1125,7 +1125,7 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
     html += '<div class="meta-info-section">';
     html += '<h3>サムネイル</h3>';
     html += `<div class="meta-info-field">
-      <img src="${vrmMeta.thumbnailImage.src}" alt="サムネイル" class="meta-thumbnail" />
+      <img src="${vrmMeta.thumbnailImage}" alt="サムネイル" class="meta-thumbnail" />
     </div>`;
     html += '</div>';
   }

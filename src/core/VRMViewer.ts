@@ -316,34 +316,67 @@ export class VRMViewer {
     try {
       // HTMLImageElementの場合
       if (texture.image instanceof HTMLImageElement) {
+        console.log('VRM0サムネイル: HTMLImageElement処理', texture.image.src);
         return texture.image.src;
       }
       
       // HTMLCanvasElementの場合
       if (texture.image instanceof HTMLCanvasElement) {
+        console.log('VRM0サムネイル: HTMLCanvasElement処理');
         return texture.image.toDataURL();
       }
       
       // ImageBitmapの場合
       if (texture.image instanceof ImageBitmap) {
+        console.log('VRM0サムネイル: ImageBitmap処理開始', {
+          width: texture.image.width,
+          height: texture.image.height
+        });
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (ctx) {
           canvas.width = texture.image.width;
           canvas.height = texture.image.height;
+          
+          console.log('VRM0サムネイル: Canvas設定完了', {
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height
+          });
+          
+          // ImageBitmapをCanvasに描画
           ctx.drawImage(texture.image, 0, 0);
-          return canvas.toDataURL();
+          
+          // DataURLに変換
+          const dataURL = canvas.toDataURL('image/png');
+          console.log('VRM0サムネイル: DataURL生成完了', {
+            dataURLLength: dataURL.length,
+            dataURLPrefix: dataURL.substring(0, 50)
+          });
+          
+          return dataURL;
+        } else {
+          console.error('VRM0サムネイル: Canvas 2Dコンテキストの取得に失敗');
         }
       }
       
       // Base64文字列の場合
       if (typeof texture.image === 'string' && texture.userData?.mimeType) {
+        console.log('VRM0サムネイル: Base64文字列処理', {
+          mimeType: texture.userData.mimeType,
+          stringLength: texture.image.length
+        });
+        
         if (texture.image.startsWith('data:image/')) {
           return texture.image;
         }
         return `data:${texture.userData.mimeType};base64,${texture.image}`;
       }
       
+      console.warn('VRM0サムネイル: 未対応の形式', {
+        imageType: texture.image ? texture.image.constructor.name : 'null',
+        userData: texture.userData
+      });
       return null;
     } catch (error) {
       console.error('VRM0サムネイル抽出エラー:', error);

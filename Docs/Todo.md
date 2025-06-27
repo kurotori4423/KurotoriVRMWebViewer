@@ -122,10 +122,11 @@
 - [x] モデル名、作者、ライセンス情報の表示
 - [x] サムネイル画像の表示（実装完了）
   - [x] VRM1系のサムネイル画像表示対応
-  - [x] **VRM0系のサムネイル画像表示対応**
+  - [x] **VRM0系のサムネイル画像表示対応（完全解決）** ✨
     - [x] textureプロパティからImageBitmap/HTMLImageElement対応
     - [x] extractVRM0ThumbnailImage関数でcanvas変換実装
     - [x] VRM0/VRM1両方でのサムネイル表示動作確認完了
+    - [x] **main.ts表示バグ修正**: thumbnailImage.src → thumbnailImageに修正してDataURL表示を正常化
 - [x] VRMバージョン情報の表示
   - [x] VRM0/VRM1の自動検知とメタ情報正規化
   - [x] バージョンごとの適切なメタ情報項目表示
