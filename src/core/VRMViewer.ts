@@ -19,6 +19,11 @@ export class VRMViewer {
   // ViewportGizmo関連
   private viewportGizmo: ViewportGizmo;
   
+  // ライト制御用
+  private ambientLight: THREE.AmbientLight;
+  private directionalLight: THREE.DirectionalLight;
+  private rimLight: THREE.DirectionalLight;
+  
   // VRM関連
   private gltfLoader: GLTFLoader;
   private currentVRM: VRM | null = null;
@@ -90,26 +95,26 @@ export class VRMViewer {
    */
   private setupLights(): void {
     // 環境光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    this.scene.add(ambientLight);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    this.scene.add(this.ambientLight);
 
     // ディレクショナルライト（太陽光のような平行光）
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(1, 2, 3);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.setScalar(1024);
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 10;
-    directionalLight.shadow.camera.left = -5;
-    directionalLight.shadow.camera.right = 5;
-    directionalLight.shadow.camera.top = 5;
-    directionalLight.shadow.camera.bottom = -5;
-    this.scene.add(directionalLight);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    this.directionalLight.position.set(1, 2, 3);
+    this.directionalLight.castShadow = true;
+    this.directionalLight.shadow.mapSize.setScalar(1024);
+    this.directionalLight.shadow.camera.near = 0.1;
+    this.directionalLight.shadow.camera.far = 10;
+    this.directionalLight.shadow.camera.left = -5;
+    this.directionalLight.shadow.camera.right = 5;
+    this.directionalLight.shadow.camera.top = 5;
+    this.directionalLight.shadow.camera.bottom = -5;
+    this.scene.add(this.directionalLight);
 
     // リムライト（輪郭を際立たせる）
-    const rimLight = new THREE.DirectionalLight(0x66ccff, 0.5);
-    rimLight.position.set(-1, 1, -2);
-    this.scene.add(rimLight);
+    this.rimLight = new THREE.DirectionalLight(0x66ccff, 0.5);
+    this.rimLight.position.set(-1, 1, -2);
+    this.scene.add(this.rimLight);
   }
 
   /**
@@ -444,11 +449,12 @@ export class VRMViewer {
   }
 
   /**
-   * カメラ位置をリセット
+   * カメラ位置をリセット（即座復帰）
    */
   resetCamera(): void {
-    if (this.currentVRM) {
-      this.adjustCameraToModel(this.currentVRM);
+    if (this.vrmModels.length > 0) {
+      // 複数モデルがある場合は全体表示に調整
+      this.adjustCameraToAllModels();
     } else {
       // デフォルト位置
       this.camera.position.set(0, 1.5, 3);
@@ -456,7 +462,98 @@ export class VRMViewer {
       this.controls.target.set(0, 1, 0);
       this.controls.update();
     }
-    console.log('カメラ位置をリセットしました');
+    console.log('カメラ位置を即座にリセットしました');
+  }
+
+  /**
+   * デフォルト位置への即座復帰
+   */
+  resetCameraToDefault(): void {
+    // デフォルト位置（原点を見下ろす角度）
+    this.camera.position.set(0, 1.5, 3);
+    this.camera.lookAt(0, 1, 0);
+    this.controls.target.set(0, 1, 0);
+    this.controls.update();
+    console.log('カメラをデフォルト位置にリセットしました');
+  }
+
+  /**
+   * 全体表示への自動調整
+   */
+  resetCameraToFitAll(): void {
+    if (this.vrmModels.length > 0) {
+      this.adjustCameraToAllModels();
+      console.log('カメラを全体表示に調整しました');
+    } else {
+      // モデルがない場合はデフォルト位置
+      this.resetCameraToDefault();
+    }
+  }
+
+  /**
+   * 滑らかなアニメーション付きカメラリセット
+   */
+  async resetCameraAnimated(duration: number = 1000): Promise<void> {
+    return new Promise((resolve) => {
+      // 現在のカメラ位置とターゲット
+      const startPosition = this.camera.position.clone();
+      const startTarget = this.controls.target.clone();
+
+      // 目標位置とターゲットを計算
+      let endPosition: THREE.Vector3;
+      let endTarget: THREE.Vector3;
+
+      if (this.vrmModels.length > 0) {
+        // 全体表示に調整した時の位置を計算
+        const overallBox = new THREE.Box3();
+        this.vrmModels.forEach((vrm) => {
+          const box = new THREE.Box3().setFromObject(vrm.scene);
+          overallBox.union(box);
+        });
+
+        const size = overallBox.getSize(new THREE.Vector3());
+        const center = overallBox.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = this.camera.fov * (Math.PI / 180);
+        const distance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.2;
+
+        endPosition = new THREE.Vector3(
+          center.x + distance * 0.5,
+          center.y + distance * 0.3,
+          center.z + distance
+        );
+        endTarget = center.clone();
+      } else {
+        // デフォルト位置
+        endPosition = new THREE.Vector3(0, 1.5, 3);
+        endTarget = new THREE.Vector3(0, 1, 0);
+      }
+
+      // アニメーション
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // イージング関数（ease-out）
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        // 位置とターゲットを補間
+        this.camera.position.lerpVectors(startPosition, endPosition, easeOut);
+        this.controls.target.lerpVectors(startTarget, endTarget, easeOut);
+        this.controls.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          console.log('カメラアニメーションが完了しました');
+          resolve();
+        }
+      };
+
+      animate();
+    });
   }
 
   /**
@@ -864,5 +961,62 @@ export class VRMViewer {
   clearSelection(): void {
     this.selectedModelIndex = -1;
     this.hideOutline();
+  }
+
+  /**
+   * 環境光の強度を設定
+   * @param intensity 強度 (0.0 - 2.0)
+   */
+  setAmbientLightIntensity(intensity: number): void {
+    this.ambientLight.intensity = Math.max(0, Math.min(2, intensity));
+  }
+
+  /**
+   * ディレクショナルライトの強度を設定
+   * @param intensity 強度 (0.0 - 3.0)
+   */
+  setDirectionalLightIntensity(intensity: number): void {
+    this.directionalLight.intensity = Math.max(0, Math.min(3, intensity));
+  }
+
+  /**
+   * リムライトの強度を設定
+   * @param intensity 強度 (0.0 - 2.0)
+   */
+  setRimLightIntensity(intensity: number): void {
+    this.rimLight.intensity = Math.max(0, Math.min(2, intensity));
+  }
+
+  /**
+   * 現在の環境光の強度を取得
+   * @returns 環境光の強度
+   */
+  getAmbientLightIntensity(): number {
+    return this.ambientLight.intensity;
+  }
+
+  /**
+   * 現在のディレクショナルライトの強度を取得
+   * @returns ディレクショナルライトの強度
+   */
+  getDirectionalLightIntensity(): number {
+    return this.directionalLight.intensity;
+  }
+
+  /**
+   * 現在のリムライトの強度を取得
+   * @returns リムライトの強度
+   */
+  getRimLightIntensity(): number {
+    return this.rimLight.intensity;
+  }
+
+  /**
+   * 全てのライトをデフォルト設定にリセット
+   */
+  resetLights(): void {
+    this.setAmbientLightIntensity(0.3);
+    this.setDirectionalLightIntensity(1.0);
+    this.setRimLightIntensity(0.5);
   }
 }

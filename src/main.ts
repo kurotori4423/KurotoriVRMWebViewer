@@ -26,7 +26,14 @@ async function main() {
             <h3>モデル操作</h3>
             <div class="control-group">
               <button id="center-model" class="control-btn">中央配置</button>
+            </div>
+            <div class="control-group">
               <button id="reset-camera" class="control-btn">カメラリセット</button>
+              <button id="reset-camera-default" class="control-btn">デフォルト位置</button>
+            </div>
+            <div class="control-group">
+              <button id="reset-camera-fit-all" class="control-btn">全体表示</button>
+              <button id="reset-camera-animated" class="control-btn">アニメーション</button>
             </div>
             <div class="control-group">
               <label for="model-scale">スケール:</label>
@@ -44,6 +51,28 @@ async function main() {
             <div class="control-group">
               <button id="clear-all-vrms" class="danger-btn">全て削除</button>
               <span id="vrm-count">VRM数: 0</span>
+            </div>
+          </div>
+          
+          <div id="lighting-controls">
+            <h3>ライト調整</h3>
+            <div class="control-group">
+              <label for="ambient-light">環境光:</label>
+              <input type="range" id="ambient-light" min="0.0" max="2.0" step="0.1" value="0.3" />
+              <span id="ambient-value">0.3</span>
+            </div>
+            <div class="control-group">
+              <label for="directional-light">方向性ライト:</label>
+              <input type="range" id="directional-light" min="0.0" max="3.0" step="0.1" value="1.0" />
+              <span id="directional-value">1.0</span>
+            </div>
+            <div class="control-group">
+              <label for="rim-light">リムライト:</label>
+              <input type="range" id="rim-light" min="0.0" max="2.0" step="0.1" value="0.5" />
+              <span id="rim-value">0.5</span>
+            </div>
+            <div class="control-group">
+              <button id="reset-lights" class="control-btn">ライトリセット</button>
             </div>
           </div>
           
@@ -117,6 +146,9 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   // モデル操作コントロール
   const centerModelBtn = document.getElementById('center-model') as HTMLButtonElement;
   const resetCameraBtn = document.getElementById('reset-camera') as HTMLButtonElement;
+  const resetCameraDefaultBtn = document.getElementById('reset-camera-default') as HTMLButtonElement;
+  const resetCameraFitAllBtn = document.getElementById('reset-camera-fit-all') as HTMLButtonElement;
+  const resetCameraAnimatedBtn = document.getElementById('reset-camera-animated') as HTMLButtonElement;
   const modelScaleSlider = document.getElementById('model-scale') as HTMLInputElement;
   const scaleValueSpan = document.getElementById('scale-value') as HTMLSpanElement;
 
@@ -163,6 +195,18 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
 
   resetCameraBtn.addEventListener('click', () => {
     vrmViewer.resetCamera();
+  });
+
+  resetCameraDefaultBtn.addEventListener('click', () => {
+    vrmViewer.resetCameraToDefault();
+  });
+
+  resetCameraFitAllBtn.addEventListener('click', () => {
+    vrmViewer.resetCameraToFitAll();
+  });
+
+  resetCameraAnimatedBtn.addEventListener('click', async () => {
+    await vrmViewer.resetCameraAnimated(1500); // 1.5秒のアニメーション
   });
 
   modelScaleSlider.addEventListener('input', (event) => {
@@ -256,6 +300,58 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   // 初期カウント更新
   updateVRMCount(vrmViewer, vrmCountSpan);
   updateModelList(vrmViewer);
+
+  // ライト調整のイベントハンドラを設定
+  setupLightingHandlers(vrmViewer);
+}
+
+/**
+ * ライト調整のイベントハンドラを設定
+ */
+function setupLightingHandlers(vrmViewer: VRMViewer): void {
+  // 環境光調整
+  const ambientLightSlider = document.getElementById('ambient-light') as HTMLInputElement;
+  const ambientValue = document.getElementById('ambient-value') as HTMLSpanElement;
+  
+  ambientLightSlider.addEventListener('input', (event) => {
+    const intensity = parseFloat((event.target as HTMLInputElement).value);
+    vrmViewer.setAmbientLightIntensity(intensity);
+    ambientValue.textContent = intensity.toFixed(1);
+  });
+
+  // 方向性ライト調整
+  const directionalLightSlider = document.getElementById('directional-light') as HTMLInputElement;
+  const directionalValue = document.getElementById('directional-value') as HTMLSpanElement;
+  
+  directionalLightSlider.addEventListener('input', (event) => {
+    const intensity = parseFloat((event.target as HTMLInputElement).value);
+    vrmViewer.setDirectionalLightIntensity(intensity);
+    directionalValue.textContent = intensity.toFixed(1);
+  });
+
+  // リムライト調整
+  const rimLightSlider = document.getElementById('rim-light') as HTMLInputElement;
+  const rimValue = document.getElementById('rim-value') as HTMLSpanElement;
+  
+  rimLightSlider.addEventListener('input', (event) => {
+    const intensity = parseFloat((event.target as HTMLInputElement).value);
+    vrmViewer.setRimLightIntensity(intensity);
+    rimValue.textContent = intensity.toFixed(1);
+  });
+
+  // ライトリセットボタン
+  const resetLightsBtn = document.getElementById('reset-lights') as HTMLButtonElement;
+  resetLightsBtn.addEventListener('click', () => {
+    vrmViewer.resetLights();
+    
+    // UIも初期値にリセット
+    ambientLightSlider.value = '0.3';
+    ambientValue.textContent = '0.3';
+    directionalLightSlider.value = '1.0';
+    directionalValue.textContent = '1.0';
+    rimLightSlider.value = '0.5';
+    rimValue.textContent = '0.5';
+  });
 }
 
 /**
