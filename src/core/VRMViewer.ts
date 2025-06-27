@@ -26,11 +26,19 @@ export class VRMViewer {
   private rimLight: THREE.DirectionalLight;
   private directionalLightHelper: THREE.DirectionalLightHelper | null = null;
   private directionalLightProxy: THREE.Mesh | null = null; // ライト操作用の3Dオブジェクト（ワイヤーフレーム表示）
+  private directionalLightCollider: THREE.Mesh | null = null; // ライト選択用の当たり判定球体（透明）
   private lightTransformControls: TransformControls | null = null;
-  private lightHelpersVisible: boolean = false;
+  private lightHelpersVisible: boolean = true; // 初期状態から表示
   private proxyVisible: boolean = true; // プロキシオブジェクトの表示状態（一時的にtrue）
   private proxyInitialQuaternion: THREE.Quaternion | null = null; // プロキシの初期回転状態（ドラッグ開始時）
   private lightInitialDirection: THREE.Vector3 | null = null; // ライトの初期方向（ドラッグ開始時）
+  
+  // 3Dビュー選択用
+  private raycaster: THREE.Raycaster;
+  private mouse: THREE.Vector2;
+  
+  // ライト選択状態変更コールバック
+  private onLightSelectionChanged: ((isSelected: boolean) => void) | null = null;
   
   // VRM関連
   private gltfLoader: GLTFLoader;
@@ -49,6 +57,10 @@ export class VRMViewer {
     
     // ViewportGizmoの初期化
     this.viewportGizmo = new ViewportGizmo(this.camera, this.renderer);
+    
+    // 3Dビュー選択用の初期化
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
     
     // GLTFローダーの初期化とVRMプラグインの設定
     this.gltfLoader = new GLTFLoader();
@@ -159,6 +171,24 @@ export class VRMViewer {
     // プロキシの可視性を設定
     this.directionalLightProxy.visible = this.proxyVisible;
     this.scene.add(this.directionalLightProxy);
+    
+    // ライト選択用のコライダー（透明球体）を作成
+    const colliderGeometry = new THREE.SphereGeometry(0.5);
+    const colliderMaterial = new THREE.MeshBasicMaterial({ 
+      transparent: true,
+      opacity: 0, // 完全に透明
+      depthTest: false, // 深度テストを無効にして常に選択可能
+      depthWrite: false
+    });
+    this.directionalLightCollider = new THREE.Mesh(colliderGeometry, colliderMaterial);
+    // コライダーの位置をライトと同じ位置に設定
+    this.directionalLightCollider.position.copy(this.directionalLight.position);
+    // コライダーの可視性をライトヘルパーと連動
+    this.directionalLightCollider.visible = this.lightHelpersVisible;
+    // ライト選択識別用のユーザーデータを設定
+    this.directionalLightCollider.userData.isLightCollider = true;
+    this.directionalLightCollider.userData.lightType = 'directional';
+    this.scene.add(this.directionalLightCollider);
     
     // TransformControlsの作成
     this.lightTransformControls = new TransformControls(this.camera, this.renderer.domElement);
@@ -290,6 +320,9 @@ export class VRMViewer {
   private setupEventListeners(): void {
     // ウィンドウリサイズ対応
     window.addEventListener('resize', this.onWindowResize.bind(this));
+    
+    // 3Dビューでのライト選択対応
+    this.canvas.addEventListener('click', this.onCanvasClick.bind(this));
   }
 
   /**
@@ -302,6 +335,61 @@ export class VRMViewer {
     
     // ViewportGizmoの更新
     this.viewportGizmo.update();
+  }
+
+  /**
+   * キャンバスクリックイベントハンドラ（3Dビューでのライト選択）
+   */
+  private onCanvasClick(event: MouseEvent): void {
+    // TransformControls使用中は無効化（干渉防止）
+    if (this.lightTransformControls && this.lightTransformControls.dragging) {
+      return;
+    }
+
+    // マウス座標を正規化デバイス座標系に変換
+    const rect = this.canvas.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Raycastingを実行
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    
+    // ライトコライダーとの交差判定
+    const intersectableObjects: THREE.Object3D[] = [];
+    if (this.directionalLightCollider && this.directionalLightCollider.visible) {
+      intersectableObjects.push(this.directionalLightCollider);
+    }
+    
+    const intersects = this.raycaster.intersectObjects(intersectableObjects);
+    
+    if (intersects.length > 0) {
+      // ライトコライダーがクリックされた場合
+      const clickedObject = intersects[0].object;
+      if (clickedObject.userData.isLightCollider && clickedObject.userData.lightType === 'directional') {
+        console.log('ライトが3Dビューで選択されました');
+        this.enableDirectionalLightTransform();
+        // コールバックでGUIに通知
+        if (this.onLightSelectionChanged) {
+          this.onLightSelectionChanged(true);
+        }
+      }
+    } else {
+      // 空のスペースがクリックされた場合、現在ライトが選択されていない場合のみ何もしない
+      // 既にライトが選択されている場合は選択を維持する
+      if (this.lightTransformControls && this.lightTransformControls.enabled) {
+        // ライトが既に選択されている場合は何もしない（選択を維持）
+        console.log('ライトが選択中につき、空のスペースクリックは無視されました');
+        return;
+      }
+      
+      // ライトが選択されていない場合のみ、選択解除処理を実行
+      console.log('ライト選択が3Dビューで解除されました');
+      this.disableLightTransform();
+      // コールバックでGUIに通知
+      if (this.onLightSelectionChanged) {
+        this.onLightSelectionChanged(false);
+      }
+    }
   }
 
   /**
@@ -1517,13 +1605,31 @@ export class VRMViewer {
       this.lightInitialDirection = null;
     }
     
+    // コライダーの位置もリセット
+    if (this.directionalLightCollider) {
+      this.directionalLightCollider.position.set(0, 3, 0);
+    }
+    
     // ライトヘルパーを更新
     if (this.directionalLightHelper) {
       this.directionalLightHelper.update();
     }
     
-    // TransformControlsを無効化
-    this.disableLightTransform();
+    // TransformControlsのみを無効化（ライトヘルパーの表示状態は維持）
+    if (this.lightTransformControls) {
+      this.lightTransformControls.detach();
+      this.lightTransformControls.enabled = false;
+    }
+    // プロキシとライトの初期状態をクリア
+    this.proxyInitialQuaternion = null;
+    this.lightInitialDirection = null;
+    // プロキシを非表示にする
+    this.setLightProxyVisible(false);
+    
+    // ライト選択状態変更をGUIに通知
+    if (this.onLightSelectionChanged) {
+      this.onLightSelectionChanged(false);
+    }
   }
 
   /**
@@ -1606,6 +1712,10 @@ export class VRMViewer {
         this.directionalLightHelper.update();
       }
     }
+    // ライト選択用コライダーも連動
+    if (this.directionalLightCollider) {
+      this.directionalLightCollider.visible = visible;
+    }
   }
 
   /**
@@ -1626,6 +1736,11 @@ export class VRMViewer {
       
       // プロキシの位置をライトと同じ位置に更新
       this.directionalLightProxy.position.copy(this.directionalLight.position);
+      
+      // コライダーの位置もライトと同じ位置に更新
+      if (this.directionalLightCollider) {
+        this.directionalLightCollider.position.copy(this.directionalLight.position);
+      }
       
       // 現在のライト方向を取得して、プロキシの回転を設定
       const lightDirection = new THREE.Vector3();
@@ -1690,5 +1805,13 @@ export class VRMViewer {
    */
   isLightProxyVisible(): boolean {
     return this.proxyVisible;
+  }
+
+  /**
+   * ライト選択状態変更のコールバック関数を設定
+   * @param callback ライト選択状態が変更された時に呼び出される関数
+   */
+  setLightSelectionCallback(callback: (isSelected: boolean) => void): void {
+    this.onLightSelectionChanged = callback;
   }
 }

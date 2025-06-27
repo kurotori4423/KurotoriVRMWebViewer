@@ -216,6 +216,12 @@ async function main() {
     // キーボード操作のイベントリスナーを設定
     setupKeyboardHandlers(vrmViewer);
     
+    // ライト選択状態変更のコールバック設定
+    setupLightSelectionCallback(vrmViewer);
+    
+    // ライトヘルパーの初期状態をUIに反映
+    updateLightHelperButtonText(vrmViewer);
+    
   } catch (error) {
     console.error('VRMビューワーの初期化に失敗しました:', error);
     showError('VRMビューワーの初期化に失敗しました');
@@ -1243,8 +1249,6 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
     </div>`;
   }
 
-  html += '</div>';
-
   // VRM1系の場合：使用許可・利用制限セクション
   if (vrmMeta.isVRM1) {
     html += '<div class="meta-info-section">';
@@ -1353,6 +1357,31 @@ function hideMetaInfoModal(): void {
   const modal = document.getElementById('meta-info-modal') as HTMLDivElement;
   if (modal) {
     modal.classList.add('hidden');
+  }
+}
+
+/**
+ * ライト選択状態変更のコールバック設定
+ */
+function setupLightSelectionCallback(vrmViewer: VRMViewer): void {
+  const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
+  
+  // 3Dビューでの選択状態変更をGUIボタンに反映
+  vrmViewer.setLightSelectionCallback((isSelected: boolean) => {
+    if (selectDirectionalLightBtn) {
+      selectDirectionalLightBtn.textContent = isSelected ? '選択解除' : '方向性ライト選択';
+    }
+  });
+}
+
+/**
+ * ライトヘルパーボタンのテキストを初期状態に合わせて更新
+ */
+function updateLightHelperButtonText(vrmViewer: VRMViewer): void {
+  const toggleLightHelpersBtn = document.getElementById('toggle-light-helpers') as HTMLButtonElement;
+  if (toggleLightHelpersBtn) {
+    const isVisible = vrmViewer.getLightHelpersVisible();
+    toggleLightHelpersBtn.textContent = isVisible ? 'ライトヘルパー非表示' : 'ライトヘルパー表示';
   }
 }
 
