@@ -1046,6 +1046,34 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
         <span class="meta-info-value"><span class="meta-license-badge">${modificationText}</span></span>
       </div>`;
     }
+
+    // 再配布許可
+    if (vrmMeta.allowRedistribution !== undefined) {
+      const redistributionText = vrmMeta.allowRedistribution ? '許可' : '禁止';
+      const redistributionClass = vrmMeta.allowRedistribution ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">再配布:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${redistributionClass}">${redistributionText}</span></span>
+      </div>`;
+    }
+
+    // クレジット表記
+    if (vrmMeta.creditNotation) {
+      const creditText = vrmMeta.creditNotation === 'required' ? '必須' : 
+                        vrmMeta.creditNotation === 'unnecessary' ? '不要' : vrmMeta.creditNotation;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">クレジット表記:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${creditText}</span></span>
+      </div>`;
+    }
+
+    // サードパーティライセンス
+    if (vrmMeta.thirdPartyLicenses) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">サードパーティライセンス:</span>
+        <span class="meta-info-value">${vrmMeta.thirdPartyLicenses}</span>
+      </div>`;
+    }
   } else {
     // VRM0.x形式のライセンス情報
     if (vrmMeta.commercialUssageName !== undefined) {
@@ -1104,6 +1132,65 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
   }
 
   html += '</div>';
+
+  // VRM1系の場合：使用許可・利用制限セクション
+  if (vrmMeta.isVRM1) {
+    html += '<div class="meta-info-section">';
+    html += '<h3>使用許可・利用制限</h3>';
+
+    // アバター使用許可
+    if (vrmMeta.avatarPermission) {
+      const avatarText = vrmMeta.avatarPermission === 'onlyAuthor' ? '作者のみ' :
+                        vrmMeta.avatarPermission === 'onlySeparatelyLicensedPerson' ? 'ライセンス対象者のみ' :
+                        vrmMeta.avatarPermission === 'everyone' ? '全員' : vrmMeta.avatarPermission;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">アバター使用許可:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${avatarText}</span></span>
+      </div>`;
+    }
+
+    // 暴力表現の許可
+    if (vrmMeta.allowExcessivelyViolentUsage !== undefined) {
+      const violentText = vrmMeta.allowExcessivelyViolentUsage ? '許可' : '禁止';
+      const violentClass = vrmMeta.allowExcessivelyViolentUsage ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">過激な暴力表現:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${violentClass}">${violentText}</span></span>
+      </div>`;
+    }
+
+    // 性的表現の許可
+    if (vrmMeta.allowExcessivelySexualUsage !== undefined) {
+      const sexualText = vrmMeta.allowExcessivelySexualUsage ? '許可' : '禁止';
+      const sexualClass = vrmMeta.allowExcessivelySexualUsage ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">過激な性的表現:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${sexualClass}">${sexualText}</span></span>
+      </div>`;
+    }
+
+    // 政治・宗教利用の許可
+    if (vrmMeta.allowPoliticalOrReligiousUsage !== undefined) {
+      const politicalText = vrmMeta.allowPoliticalOrReligiousUsage ? '許可' : '禁止';
+      const politicalClass = vrmMeta.allowPoliticalOrReligiousUsage ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">政治・宗教利用:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${politicalClass}">${politicalText}</span></span>
+      </div>`;
+    }
+
+    // 反社会的・ヘイト利用の許可
+    if (vrmMeta.allowAntisocialOrHateUsage !== undefined) {
+      const antisocialText = vrmMeta.allowAntisocialOrHateUsage ? '許可' : '禁止';
+      const antisocialClass = vrmMeta.allowAntisocialOrHateUsage ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">反社会的・ヘイト利用:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${antisocialClass}">${antisocialText}</span></span>
+      </div>`;
+    }
+
+    html += '</div>';
+  }
 
   // 連絡先・その他情報セクション
   if (vrmMeta.contactInformation || vrmMeta.reference || vrmMeta.references) {

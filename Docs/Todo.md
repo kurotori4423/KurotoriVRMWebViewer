@@ -18,12 +18,22 @@
   - [x] VRM0系: title→name変換, author→authors配列変換, 詳細なライセンス情報表示
   - [x] VRM1系: 既存のname, authors配列, 商用利用・改変許可等の表示
   - [x] バージョンごとの適切なUI表示分岐（バージョンバッジ、ライセンス詳細、サムネイル等）
+- [x] **VRM1系メタ情報表示の充実** ✨
+  - [x] 再配布許可・クレジット表記・サードパーティライセンス項目の追加
+  - [x] 使用許可・利用制限セクションの実装
+    - [x] アバター使用許可（onlyAuthor, onlySeparatelyLicensedPerson, everyone）
+    - [x] 過激な暴力表現許可（allowExcessivelyViolentUsage）
+    - [x] 過激な性的表現許可（allowExcessivelySexualUsage）
+    - [x] 政治・宗教利用許可（allowPoliticalOrReligiousUsage）
+    - [x] 反社会的・ヘイト利用許可（allowAntisocialOrHateUsage）
+  - [x] 公式ドキュメントに基づく完全なVRM1.0メタ情報対応
 - [x] Playwrightでの動作確認完了
   - [x] VRM0/VRM1両方でのバージョン検知確認
   - [x] 各バージョンのメタ情報表示確認
   - [x] 複数モデルでの動作確認
   - [x] モーダル開閉の動作確認
-  - [x] モデル選択機能への影響なし確認- [x] 初回コミットの実行
+  - [x] モデル選択機能への影響なし確認
+  - [x] VRM1系の充実したメタ情報表示確認- [x] 初回コミットの実行
 
 ### 1.1 開発環境セットアップ
 - [x] Viteプロジェクトの初期化
