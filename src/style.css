@@ -124,7 +124,7 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   width: 90%;
-  max-width: 500px;
+  max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
   transform: scale(1);
@@ -784,6 +784,44 @@ h3 {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   margin-top: 5px;
+}
+
+/* 基本情報セクションの横並びレイアウト */
+.basic-info-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.thumbnail-container {
+  flex-shrink: 0;
+}
+
+.meta-thumbnail-inline {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  object-fit: cover;
+}
+
+.basic-info-details {
+  flex: 1;
+  min-width: 0; /* テキストが長い場合の overflow を防ぐ */
+}
+
+/* レスポンシブ対応 - 狭い画面では縦並びに */
+@media (max-width: 600px) {
+  .basic-info-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .meta-thumbnail-inline {
+    max-width: 100px;
+    max-height: 100px;
+  }
 }
 
 .meta-license-badge {

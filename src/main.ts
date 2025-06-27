@@ -952,9 +952,20 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
 
   let html = '';
 
-  // 基本情報セクション
+  // 基本情報セクション（サムネイル付き）
   html += '<div class="meta-info-section">';
   html += '<h3>基本情報</h3>';
+  html += '<div class="basic-info-container">';
+  
+  // サムネイル画像（左側）
+  if (vrmMeta.thumbnailImage) {
+    html += '<div class="thumbnail-container">';
+    html += `<img src="${vrmMeta.thumbnailImage}" alt="サムネイル" class="meta-thumbnail-inline" />`;
+    html += '</div>';
+  }
+  
+  // 基本情報（右側）
+  html += '<div class="basic-info-details">';
   
   // モデル名
   const modelName = vrmMeta.name || `Model ${index + 1}`;
@@ -987,8 +998,10 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
       </div>`;
     }
   }
-
-  html += '</div>';
+  
+  html += '</div>'; // basic-info-details 終了
+  html += '</div>'; // basic-info-container 終了
+  html += '</div>'; // meta-info-section 終了
 
   // ライセンス情報セクション
   html += '<div class="meta-info-section">';

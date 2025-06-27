@@ -129,6 +129,11 @@
     - [x] extractVRM0ThumbnailImage関数でcanvas変換実装
     - [x] **main.ts表示バグ修正**: thumbnailImage.src → thumbnailImageに修正してDataURL表示を正常化
   - [x] **VRM0/VRM1統一サムネイル処理完成**: 両方ともDataURL文字列で統一し、美しいサムネイル表示を実現
+  - [x] **サムネイル横並びレイアウト完成** ✨
+    - [x] 基本情報セクションでサムネイル画像（左）と基本情報（右）の横並び表示
+    - [x] レスポンシブ対応（狭い画面では縦並びに自動切り替え）
+    - [x] CSS `basic-info-container`, `thumbnail-container`, `meta-thumbnail-inline`, `basic-info-details`完成
+    - [x] VRM0/VRM1両方での横並びレイアウト動作確認完了
 - [x] VRMバージョン情報の表示
   - [x] VRM0/VRM1の自動検知とメタ情報正規化
   - [x] バージョンごとの適切なメタ情報項目表示
