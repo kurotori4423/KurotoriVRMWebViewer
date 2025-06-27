@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ViewportGizmo } from 'three-viewport-gizmo';
@@ -23,6 +24,9 @@ export class VRMViewer {
   private ambientLight: THREE.AmbientLight;
   private directionalLight: THREE.DirectionalLight;
   private rimLight: THREE.DirectionalLight;
+  private directionalLightHelper: THREE.DirectionalLightHelper | null = null;
+  private lightTransformControls: TransformControls | null = null;
+  private lightHelpersVisible: boolean = false;
   
   // VRM関連
   private gltfLoader: GLTFLoader;
@@ -121,6 +125,31 @@ export class VRMViewer {
     this.rimLight = new THREE.DirectionalLight(0x66ccff, 0.5);
     this.rimLight.position.set(-1, 1, -2);
     this.scene.add(this.rimLight);
+    
+    // ライトヘルパーの初期化
+    this.setupLightHelpers();
+  }
+  
+  /**
+   * ライトヘルパーとTransformControlsの設定
+   */
+  private setupLightHelpers(): void {
+    // DirectionalLightHelperの作成
+    this.directionalLightHelper = new THREE.DirectionalLightHelper(this.directionalLight, 1);
+    this.directionalLightHelper.visible = this.lightHelpersVisible;
+    this.scene.add(this.directionalLightHelper);
+    
+    // TransformControlsの作成
+    this.lightTransformControls = new TransformControls(this.camera, this.renderer.domElement);
+    this.lightTransformControls.setMode('rotate'); // 回転モードに設定
+    this.lightTransformControls.enabled = false; // 初期状態では無効
+    this.scene.add(this.lightTransformControls);
+    
+    // TransformControlsのイベント設定
+    this.lightTransformControls.addEventListener('dragging-changed', (event) => {
+      // TransformControls使用中はOrbitControlsを無効化
+      this.controls.enabled = !event.value;
+    });
   }
 
   /**
@@ -1287,6 +1316,30 @@ export class VRMViewer {
   }
 
   /**
+   * 環境光の色を設定
+   * @param color 色 (0xRRGGBB 形式 または Color オブジェクト)
+   */
+  setAmbientLightColor(color: number | THREE.Color): void {
+    this.ambientLight.color.set(color);
+  }
+
+  /**
+   * ディレクショナルライトの色を設定
+   * @param color 色 (0xRRGGBB 形式 または Color オブジェクト)
+   */
+  setDirectionalLightColor(color: number | THREE.Color): void {
+    this.directionalLight.color.set(color);
+  }
+
+  /**
+   * リムライトの色を設定
+   * @param color 色 (0xRRGGBB 形式 または Color オブジェクト)
+   */
+  setRimLightColor(color: number | THREE.Color): void {
+    this.rimLight.color.set(color);
+  }
+
+  /**
    * 現在の環境光の強度を取得
    * @returns 環境光の強度
    */
@@ -1311,12 +1364,46 @@ export class VRMViewer {
   }
 
   /**
+   * 現在の環境光の色を取得
+   * @returns 環境光の色 (Color オブジェクト)
+   */
+  getAmbientLightColor(): THREE.Color {
+    return this.ambientLight.color;
+  }
+
+  /**
+   * 現在のディレクショナルライトの色を取得
+   * @returns ディレクショナルライトの色 (Color オブジェクト)
+   */
+  getDirectionalLightColor(): THREE.Color {
+    return this.directionalLight.color;
+  }
+
+  /**
+   * 現在のリムライトの色を取得
+   * @returns リムライトの色 (Color オブジェクト)
+   */
+  getRimLightColor(): THREE.Color {
+    return this.rimLight.color;
+  }
+
+  /**
    * 全てのライトをデフォルト設定にリセット
    */
   resetLights(): void {
     this.setAmbientLightIntensity(0.3);
     this.setDirectionalLightIntensity(1.0);
     this.setRimLightIntensity(0.5);
+    this.setAmbientLightColor(0xffffff);
+    this.setDirectionalLightColor(0xffffff);
+    this.setRimLightColor(0x66ccff);
+    
+    // ライト位置もリセット
+    this.directionalLight.position.set(1, 2, 3);
+    this.rimLight.position.set(-1, 1, -2);
+    
+    // TransformControlsを無効化
+    this.disableLightTransform();
   }
 
   /**
@@ -1384,5 +1471,52 @@ export class VRMViewer {
    */
   resetBackground(): void {
     this.setBackgroundColor('#2a2a2a'); // ダークグレーをデフォルトに
+  }
+
+  /**
+   * ライトヘルパーの表示/非表示を切り替え
+   * @param visible 表示するかどうか
+   */
+  setLightHelpersVisible(visible: boolean): void {
+    this.lightHelpersVisible = visible;
+    if (this.directionalLightHelper) {
+      this.directionalLightHelper.visible = visible;
+    }
+  }
+
+  /**
+   * 現在のライトヘルパー表示状態を取得
+   * @returns ライトヘルパーが表示されているかどうか
+   */
+  getLightHelpersVisible(): boolean {
+    return this.lightHelpersVisible;
+  }
+
+  /**
+   * 方向性ライトのTransformControlsを有効化
+   */
+  enableDirectionalLightTransform(): void {
+    if (this.lightTransformControls && this.directionalLight) {
+      this.lightTransformControls.attach(this.directionalLight);
+      this.lightTransformControls.enabled = true;
+    }
+  }
+
+  /**
+   * ライトのTransformControlsを無効化
+   */
+  disableLightTransform(): void {
+    if (this.lightTransformControls) {
+      this.lightTransformControls.detach();
+      this.lightTransformControls.enabled = false;
+    }
+  }
+
+  /**
+   * 方向性ライトがTransformControlsで選択されているかどうか
+   * @returns 選択されているかどうか
+   */
+  isDirectionalLightSelected(): boolean {
+    return this.lightTransformControls?.object === this.directionalLight;
   }
 }

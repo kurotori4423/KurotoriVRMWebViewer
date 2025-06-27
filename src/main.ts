@@ -1,4 +1,5 @@
 import './style.css';
+import * as THREE from 'three';
 import { VRMViewer } from './core/VRMViewer';
 
 /**
@@ -52,9 +53,30 @@ async function main() {
             <span id="ambient-value">0.3</span>
           </div>
           <div class="control-group">
+            <label for="ambient-color">環境光色:</label>
+            <input type="color" id="ambient-color" value="#ffffff" />
+          </div>
+          <div class="control-group">
             <label for="directional-light">方向性ライト:</label>
             <input type="range" id="directional-light" min="0.0" max="3.0" step="0.1" value="1.0" />
             <span id="directional-value">1.0</span>
+          </div>
+          <div class="control-group">
+            <label for="directional-color">方向性ライト色:</label>
+            <input type="color" id="directional-color" value="#ffffff" />
+          </div>
+          <div class="control-group">
+            <label for="rim-light">リムライト:</label>
+            <input type="range" id="rim-light" min="0.0" max="2.0" step="0.1" value="0.5" />
+            <span id="rim-value">0.5</span>
+          </div>
+          <div class="control-group">
+            <label for="rim-color">リムライト色:</label>
+            <input type="color" id="rim-color" value="#66ccff" />
+          </div>
+          <div class="control-group">
+            <button id="toggle-light-helpers" class="control-btn">ライトヘルパー表示</button>
+            <button id="select-directional-light" class="control-btn">方向性ライト選択</button>
           </div>
           <div class="control-group">
             <button id="reset-lights" class="control-btn">ライトリセット</button>
@@ -454,6 +476,15 @@ function setupLightingHandlers(vrmViewer: VRMViewer): void {
     });
   }
 
+  // 環境光色調整
+  const ambientColorPicker = document.getElementById('ambient-color') as HTMLInputElement;
+  if (ambientColorPicker) {
+    ambientColorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value;
+      vrmViewer.setAmbientLightColor(new THREE.Color(color));
+    });
+  }
+
   // 方向性ライト調整
   const directionalLightSlider = document.getElementById('directional-light') as HTMLInputElement;
   const directionalValue = document.getElementById('directional-value') as HTMLSpanElement;
@@ -463,6 +494,61 @@ function setupLightingHandlers(vrmViewer: VRMViewer): void {
       const intensity = parseFloat((event.target as HTMLInputElement).value);
       vrmViewer.setDirectionalLightIntensity(intensity);
       directionalValue.textContent = intensity.toFixed(1);
+    });
+  }
+
+  // 方向性ライト色調整
+  const directionalColorPicker = document.getElementById('directional-color') as HTMLInputElement;
+  if (directionalColorPicker) {
+    directionalColorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value;
+      vrmViewer.setDirectionalLightColor(new THREE.Color(color));
+    });
+  }
+
+  // リムライト調整
+  const rimLightSlider = document.getElementById('rim-light') as HTMLInputElement;
+  const rimValue = document.getElementById('rim-value') as HTMLSpanElement;
+  
+  if (rimLightSlider && rimValue) {
+    rimLightSlider.addEventListener('input', (event) => {
+      const intensity = parseFloat((event.target as HTMLInputElement).value);
+      vrmViewer.setRimLightIntensity(intensity);
+      rimValue.textContent = intensity.toFixed(1);
+    });
+  }
+
+  // リムライト色調整
+  const rimColorPicker = document.getElementById('rim-color') as HTMLInputElement;
+  if (rimColorPicker) {
+    rimColorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value;
+      vrmViewer.setRimLightColor(new THREE.Color(color));
+    });
+  }
+
+  // ライトヘルパー表示切り替えボタン
+  const toggleLightHelpersBtn = document.getElementById('toggle-light-helpers') as HTMLButtonElement;
+  if (toggleLightHelpersBtn) {
+    toggleLightHelpersBtn.addEventListener('click', () => {
+      const isVisible = vrmViewer.getLightHelpersVisible();
+      vrmViewer.setLightHelpersVisible(!isVisible);
+      toggleLightHelpersBtn.textContent = !isVisible ? 'ライトヘルパー非表示' : 'ライトヘルパー表示';
+    });
+  }
+
+  // 方向性ライト選択ボタン
+  const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
+  if (selectDirectionalLightBtn) {
+    selectDirectionalLightBtn.addEventListener('click', () => {
+      const isSelected = vrmViewer.isDirectionalLightSelected();
+      if (isSelected) {
+        vrmViewer.disableLightTransform();
+        selectDirectionalLightBtn.textContent = '方向性ライト選択';
+      } else {
+        vrmViewer.enableDirectionalLightTransform();
+        selectDirectionalLightBtn.textContent = '選択解除';
+      }
     });
   }
 
@@ -479,6 +565,27 @@ function setupLightingHandlers(vrmViewer: VRMViewer): void {
       if (directionalLightSlider && directionalValue) {
         directionalLightSlider.value = '1.0';
         directionalValue.textContent = '1.0';
+      }
+      if (rimLightSlider && rimValue) {
+        rimLightSlider.value = '0.5';
+        rimValue.textContent = '0.5';
+      }
+      // カラーピッカーもリセット
+      if (ambientColorPicker) {
+        ambientColorPicker.value = '#ffffff';
+      }
+      if (directionalColorPicker) {
+        directionalColorPicker.value = '#ffffff';
+      }
+      if (rimColorPicker) {
+        rimColorPicker.value = '#66ccff';
+      }
+      // ボタンテキストもリセット
+      if (toggleLightHelpersBtn) {
+        toggleLightHelpersBtn.textContent = 'ライトヘルパー表示';
+      }
+      if (selectDirectionalLightBtn) {
+        selectDirectionalLightBtn.textContent = '方向性ライト選択';
       }
     });
   }
