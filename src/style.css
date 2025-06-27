@@ -740,22 +740,34 @@ h3 {
   background: #646cff;
   color: white;
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 6px;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.info-icon {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
 }
 
 .info-btn:hover {
   background: #535bf2;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(100, 108, 255, 0.3);
+  scale: 1.1;
 }
 
 .info-btn:active {
   transform: translateY(0);
+  scale: 1.05;
 }
 
 /* メタ情報モーダル */
@@ -938,6 +950,16 @@ h3 {
   .modal-content {
     width: 95%;
     margin: 20px;
+  }
+  
+  .info-btn {
+    width: 28px;
+    height: 28px;
+    padding: 8px;
+  }
+  
+  .info-icon {
+    font-size: 16px;
   }
 }
 

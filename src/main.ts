@@ -719,15 +719,20 @@ function updateModelList(vrmViewer: VRMViewer): void {
           <div class="model-index">Index: ${index}</div>
         </div>
         <div class="model-actions">
-          <button class="info-btn" data-index="${index}" title="メタ情報を表示">Info</button>
+          <button class="info-btn" data-index="${index}" title="メタ情報を表示" aria-label="モデル${index + 1}のメタ情報を表示">
+            <span class="info-icon">ⓘ</span>
+          </button>
         </div>
       </div>
     `;
     
     // クリックイベントを追加
     modelItem.addEventListener('click', (e) => {
-      // Infoボタンがクリックされた場合は選択せずにメタ情報を表示
-      if ((e.target as HTMLElement).classList.contains('info-btn')) {
+      const target = e.target as HTMLElement;
+      // Infoボタンまたはその子要素がクリックされた場合は選択せずにメタ情報を表示
+      if (target.classList.contains('info-btn') || 
+          target.classList.contains('info-icon') || 
+          target.closest('.info-btn')) {
         e.stopPropagation();
         showMetaInfoModal(vrmViewer, index);
       } else {
