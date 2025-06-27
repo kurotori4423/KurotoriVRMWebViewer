@@ -126,6 +126,114 @@ body {
   transform: translateY(0);
 }
 
+/* プリセットボタンのスタイル */
+#preset-buttons {
+  margin: 20px 0;
+}
+
+#preset-buttons h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  #preset-buttons h3 {
+    color: #ffffff;
+  }
+}
+
+.preset-btn {
+  display: inline-block;
+  margin: 5px 5px 5px 0;
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.preset-btn:active {
+  transform: translateY(0);
+}
+
+/* ドラッグ&ドロップゾーンのスタイル */
+#drag-drop-zone {
+  margin: 20px 0;
+  padding: 30px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  text-align: center;
+  color: #666;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+#drag-drop-zone:hover {
+  border-color: #646cff;
+  background: rgba(100, 108, 255, 0.1);
+  color: #646cff;
+}
+
+#drag-drop-zone.drag-over {
+  border-color: #646cff;
+  background: rgba(100, 108, 255, 0.2);
+  color: #646cff;
+  transform: scale(1.02);
+}
+
+@media (prefers-color-scheme: dark) {
+  #drag-drop-zone {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    border-color: #555;
+  }
+  
+  #drag-drop-zone:hover {
+    background: rgba(100, 108, 255, 0.2);
+    color: #646cff;
+  }
+}
+
+/* ローディングインジケーターのスタイル */
+#loading-indicator {
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(100, 108, 255, 0.1);
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  border-radius: 6px;
+  color: #646cff;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* エラーメッセージのスタイル */
+.error {
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 6px;
+  color: #dc3545;
+  font-size: 14px;
+}
+
+/* ユーティリティクラス */
+.hidden {
+  display: none !important;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   #ui-container {
