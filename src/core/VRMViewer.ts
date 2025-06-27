@@ -306,18 +306,74 @@ export class VRMViewer {
   }
 
   /**
+   * VRM0系のtextureプロパティからサムネイル画像を抽出する
+   */
+  private extractVRM0ThumbnailImage(texture: any): string | null {
+    if (!texture) {
+      return null;
+    }
+
+    try {
+      // HTMLImageElementの場合
+      if (texture.image instanceof HTMLImageElement) {
+        return texture.image.src;
+      }
+      
+      // HTMLCanvasElementの場合
+      if (texture.image instanceof HTMLCanvasElement) {
+        return texture.image.toDataURL();
+      }
+      
+      // ImageBitmapの場合
+      if (texture.image instanceof ImageBitmap) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          canvas.width = texture.image.width;
+          canvas.height = texture.image.height;
+          ctx.drawImage(texture.image, 0, 0);
+          return canvas.toDataURL();
+        }
+      }
+      
+      // Base64文字列の場合
+      if (typeof texture.image === 'string' && texture.userData?.mimeType) {
+        if (texture.image.startsWith('data:image/')) {
+          return texture.image;
+        }
+        return `data:${texture.userData.mimeType};base64,${texture.image}`;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('VRM0サムネイル抽出エラー:', error);
+      return null;
+    }
+  }
+
+  /**
    * VRMバージョンを検知し、メタ情報を正規化する
    */
   private normalizeVRMMetadata(vrm: VRM, vrmMeta: any): any {
     // VRMのバージョンを検知
     const detectedVersion = this.detectVRMVersion(vrm, vrmMeta);
     
+    // サムネイル画像の処理
+    let thumbnailImage = null;
+    if (detectedVersion.startsWith('1.')) {
+      // VRM1系の場合
+      thumbnailImage = vrmMeta?.thumbnailImage || null;
+    } else if (detectedVersion.startsWith('0.')) {
+      // VRM0系の場合、textureプロパティからサムネイル画像を抽出
+      thumbnailImage = this.extractVRM0ThumbnailImage(vrmMeta?.texture);
+    }
+    
     // 基本構造を準備
     const normalized: any = {
       detectedVersion: detectedVersion,
       isVRM1: detectedVersion.startsWith('1.'),
       isVRM0: detectedVersion.startsWith('0.'),
-      thumbnailImage: vrmMeta?.thumbnailImage || null
+      thumbnailImage: thumbnailImage
     };
 
     if (detectedVersion.startsWith('1.')) {
