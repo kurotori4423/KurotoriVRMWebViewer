@@ -157,6 +157,17 @@ async function main() {
             <span id="scale-value">1.0</span>
           </div>
           
+          <!-- ボーン操作 -->
+          <div class="control-group">
+            <h4>ボーン操作</h4>
+            <button id="toggle-bones" class="control-btn">ボーン表示</button>
+            <button id="reset-pose" class="control-btn">ポーズリセット</button>
+          </div>
+          <div class="control-group">
+            <button id="bone-rotate-mode" class="control-btn">回転モード</button>
+            <button id="bone-translate-mode" class="control-btn">移動モード</button>
+          </div>
+          
           <!-- 操作ボタン -->
           <div class="control-group">
             <button id="focus-selected" class="control-btn" disabled>フォーカス</button>
@@ -221,6 +232,9 @@ async function main() {
     
     // ライトヘルパーの初期状態をUIに反映
     updateLightHelperButtonText(vrmViewer);
+    
+    // ボーン操作のイベントハンドラーを設定
+    setupBoneControls(vrmViewer);
     
   } catch (error) {
     console.error('VRMビューワーの初期化に失敗しました:', error);
@@ -1364,13 +1378,13 @@ function hideMetaInfoModal(): void {
  * ライト選択状態変更のコールバック設定
  */
 function setupLightSelectionCallback(vrmViewer: VRMViewer): void {
-  const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
-  
   // 3Dビューでの選択状態変更をGUIボタンに反映
-  vrmViewer.setLightSelectionCallback((isSelected: boolean) => {
+  vrmViewer.setOnLightSelectionChanged((isSelected: boolean) => {
+    const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
     if (selectDirectionalLightBtn) {
       selectDirectionalLightBtn.textContent = isSelected ? '選択解除' : '方向性ライト選択';
     }
+    console.log(`ライト選択状態: ${isSelected ? '選択中' : '非選択'}`);
   });
 }
 
@@ -1382,6 +1396,74 @@ function updateLightHelperButtonText(vrmViewer: VRMViewer): void {
   if (toggleLightHelpersBtn) {
     const isVisible = vrmViewer.getLightHelpersVisible();
     toggleLightHelpersBtn.textContent = isVisible ? 'ライトヘルパー非表示' : 'ライトヘルパー表示';
+  }
+}
+
+/**
+ * ボーン操作のイベントハンドラーを設定
+ */
+function setupBoneControls(vrmViewer: VRMViewer): void {
+  // ボーン表示/非表示ボタン
+  const toggleBonesBtn = document.getElementById('toggle-bones') as HTMLButtonElement;
+  if (toggleBonesBtn) {
+    toggleBonesBtn.addEventListener('click', () => {
+      const isVisible = vrmViewer.toggleBoneVisibility();
+      toggleBonesBtn.textContent = isVisible ? 'ボーン非表示' : 'ボーン表示';
+    });
+  }
+
+  // ポーズリセットボタン
+  const resetPoseBtn = document.getElementById('reset-pose') as HTMLButtonElement;
+  if (resetPoseBtn) {
+    resetPoseBtn.addEventListener('click', () => {
+      vrmViewer.resetAllBonePoses();
+      console.log('ポーズをリセットしました');
+    });
+  }
+
+  // 回転モードボタン
+  const boneRotateModeBtn = document.getElementById('bone-rotate-mode') as HTMLButtonElement;
+  if (boneRotateModeBtn) {
+    boneRotateModeBtn.addEventListener('click', () => {
+      vrmViewer.setBoneTransformMode('rotate');
+      updateBoneTransformModeButtons('rotate');
+      console.log('ボーン操作モード: 回転');
+    });
+  }
+
+  // 移動モードボタン
+  const boneTranslateModeBtn = document.getElementById('bone-translate-mode') as HTMLButtonElement;
+  if (boneTranslateModeBtn) {
+    boneTranslateModeBtn.addEventListener('click', () => {
+      vrmViewer.setBoneTransformMode('translate');
+      updateBoneTransformModeButtons('translate');
+      console.log('ボーン操作モード: 移動');
+    });
+  }
+
+  // ボーン選択状態変更のコールバック設定
+  vrmViewer.setOnBoneSelectionChanged((boneName: string | null) => {
+    const selectedBoneName = boneName || '未選択';
+    console.log(`選択されたボーン: ${selectedBoneName}`);
+    // 必要に応じてUIに選択されたボーン名を表示
+  });
+}
+
+/**
+ * ボーン操作モードボタンの状態を更新
+ */
+function updateBoneTransformModeButtons(mode: 'rotate' | 'translate'): void {
+  const boneRotateModeBtn = document.getElementById('bone-rotate-mode') as HTMLButtonElement;
+  const boneTranslateModeBtn = document.getElementById('bone-translate-mode') as HTMLButtonElement;
+  
+  if (boneRotateModeBtn && boneTranslateModeBtn) {
+    if (mode === 'rotate') {
+      boneRotateModeBtn.classList.add('active');
+      boneTranslateModeBtn.classList.remove('active');
+    } else {
+      boneRotateModeBtn.classList.remove('active');
+      boneTranslateModeBtn.classList.add('active');
+    }
   }
 }
 

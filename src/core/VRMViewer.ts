@@ -4,6 +4,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ViewportGizmo } from 'three-viewport-gizmo';
+import { VRMBoneController } from './VRMBoneController';
 
 /**
  * VRMビューワーのメインクラス
@@ -21,15 +22,15 @@ export class VRMViewer {
   private viewportGizmo: ViewportGizmo;
   
   // ライト制御用
-  private ambientLight: THREE.AmbientLight;
-  private directionalLight: THREE.DirectionalLight;
-  private rimLight: THREE.DirectionalLight;
+  private ambientLight!: THREE.AmbientLight;
+  private directionalLight!: THREE.DirectionalLight;
+  private rimLight!: THREE.DirectionalLight;
   private directionalLightHelper: THREE.DirectionalLightHelper | null = null;
   private directionalLightProxy: THREE.Mesh | null = null; // ライト操作用の3Dオブジェクト（ワイヤーフレーム表示）
   private directionalLightCollider: THREE.Mesh | null = null; // ライト選択用の当たり判定球体（透明）
   private lightTransformControls: TransformControls | null = null;
   private lightHelpersVisible: boolean = true; // 初期状態から表示
-  private proxyVisible: boolean = true; // プロキシオブジェクトの表示状態（一時的にtrue）
+  private proxyVisible: boolean = false; // プロキシオブジェクトの表示状態（ワイヤーフレーム非表示）
   private proxyInitialQuaternion: THREE.Quaternion | null = null; // プロキシの初期回転状態（ドラッグ開始時）
   private lightInitialDirection: THREE.Vector3 | null = null; // ライトの初期方向（ドラッグ開始時）
   
@@ -47,6 +48,9 @@ export class VRMViewer {
   private vrmSourceData: ArrayBuffer[] = []; // 各VRMの元データを保持（複製用）
   private selectedModelIndex: number = -1; // 選択されたモデルのインデックス
   private outlineMesh: THREE.Mesh | null = null; // アウトライン表示用
+  
+  // ボーンコントローラー
+  private boneController: VRMBoneController | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -82,6 +86,7 @@ export class VRMViewer {
     this.setupControls();
     this.setupViewportGizmo();
     this.setupHelpers();
+    this.setupBoneController();
     this.setupEventListeners();
     this.startRenderLoop();
     
@@ -155,7 +160,7 @@ export class VRMViewer {
     this.directionalLightHelper.visible = this.lightHelpersVisible;
     this.scene.add(this.directionalLightHelper);
     
-    // ライト操作用のプロキシオブジェクトを作成（一時的にワイヤーフレーム表示）
+    // ライト操作用のプロキシオブジェクトを作成（ワイヤーフレーム表示は無効化）
     const proxyGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     const proxyMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xff6600,  // オレンジ色
@@ -168,8 +173,8 @@ export class VRMViewer {
     this.directionalLightProxy.position.copy(this.directionalLight.position);
     // プロキシの回転をアイデンティティに初期化
     this.directionalLightProxy.quaternion.set(0, 0, 0, 1);
-    // プロキシの可視性を設定
-    this.directionalLightProxy.visible = this.proxyVisible;
+    // プロキシの可視性を設定（ワイヤーフレーム表示を無効化）
+    this.directionalLightProxy.visible = false;
     this.scene.add(this.directionalLightProxy);
     
     // ライト選択用のコライダー（透明球体）を作成
@@ -341,11 +346,12 @@ export class VRMViewer {
   }
 
   /**
-   * キャンバスクリックイベントハンドラ（3Dビューでのライト選択）
+   * キャンバスクリックイベントハンドラ（3Dビューでのライト選択・ボーン選択）
    */
   private onCanvasMouseDown(event: MouseEvent): void {
     // TransformControls使用中は無効化（干渉防止）
-    if (this.lightTransformControls && this.lightTransformControls.dragging) {
+    if ((this.lightTransformControls && this.lightTransformControls.dragging) || 
+        (this.boneController && this.boneController.isDragging())) {
       return;
     }
     
@@ -377,6 +383,9 @@ export class VRMViewer {
         if (this.onLightSelectionChanged) {
           this.onLightSelectionChanged(true);
         }
+        
+        // ライト選択時はボーン選択をスキップ
+        return;
       }
     } else {
       // 空のスペースがクリックされた場合、ライト選択を解除
@@ -385,6 +394,12 @@ export class VRMViewer {
       // コールバックでGUIに通知
       if (this.onLightSelectionChanged) {
         this.onLightSelectionChanged(false);
+      }
+      
+      // ボーン選択処理を実行
+      // 注: ライトが選択されていない場合のみボーン選択処理を行う
+      if (this.boneController && this.currentVRM) {
+        this.boneController.selectBoneByRaycast(this.raycaster);
       }
     }
   }
@@ -501,6 +516,11 @@ export class VRMViewer {
         
         // カメラ位置を調整してモデル全体が見えるようにする
         this.adjustCameraToModel(vrm);
+
+        // ボーンコントローラーにVRMを設定
+        if (this.boneController) {
+          this.boneController.setVRM(vrm);
+        }
 
         console.log('VRMモデルが正常に読み込まれました');
         console.log('VRMバージョン:', normalizedMeta.detectedVersion);
@@ -820,6 +840,13 @@ export class VRMViewer {
       }
       
       this.currentVRM = null;
+      
+      // すべてのモデルが削除された場合、ボーンコントローラーも更新
+      if (this.vrmModels.length === 0) {
+        if (this.boneController) {
+          this.boneController.setVRM(null);
+        }
+      }
     }
   }
 
@@ -1128,6 +1155,11 @@ export class VRMViewer {
         // カメラ位置を調整（全体が見えるように）
         this.adjustCameraToAllModels();
 
+        // ボーンコントローラーに新しく追加されたVRMを設定
+        if (this.boneController) {
+          this.boneController.setVRM(vrm);
+        }
+
         console.log(`VRMモデルが追加されました (総数: ${this.vrmModels.length})`);
         console.log('VRMバージョン:', normalizedMeta.detectedVersion);
         console.log('VRMメタ情報:', normalizedMeta);
@@ -1166,6 +1198,12 @@ export class VRMViewer {
     this.vrmSourceData = []; // 元データもクリア
     this.currentVRM = null;
     this.selectedModelIndex = -1; // 選択もクリア
+    
+    // ボーンコントローラーもクリア
+    if (this.boneController) {
+      this.boneController.setVRM(null);
+    }
+    
     console.log('全てのVRMモデルを削除しました');
   }
 
@@ -1200,6 +1238,19 @@ export class VRMViewer {
     // currentVRMが削除された場合は次のものを設定
     if (vrm === this.currentVRM) {
       this.currentVRM = this.vrmModels.length > 0 ? this.vrmModels[0] : null;
+      
+      // ボーンコントローラーを更新
+      if (this.boneController) {
+        this.boneController.setVRM(this.currentVRM);
+      }
+    }
+    
+    // モデルが削除されたとき、常にボーンコントローラーを正しいVRMに更新
+    // これにより、最後のモデルを削除した場合もボーン表示が消えるようになる
+    if (this.vrmModels.length === 0) {
+      if (this.boneController) {
+        this.boneController.setVRM(null);
+      }
     }
 
     // 選択インデックスの調整
@@ -1280,11 +1331,20 @@ export class VRMViewer {
     if (index < 0 || index >= this.vrmModels.length) {
       this.selectedModelIndex = -1;
       this.hideOutline();
+      // 選択されたモデルがない場合、ボーンコントローラーもクリア
+      if (this.boneController) {
+        this.boneController.setVRM(null);
+      }
       return;
     }
 
     this.selectedModelIndex = index;
     this.showOutline(this.vrmModels[index]);
+    
+    // 選択されたモデルに応じてボーンコントローラーを更新
+    if (this.boneController) {
+      this.boneController.setVRM(this.vrmModels[index]);
+    }
   }
 
   /**
@@ -1430,6 +1490,13 @@ export class VRMViewer {
     // 選択をクリア
     this.hideOutline();
     this.selectedModelIndex = -1;
+    
+    // すべてのモデルが削除された場合、ボーンコントローラーも更新
+    if (this.vrmModels.length === 0) {
+      if (this.boneController) {
+        this.boneController.setVRM(null);
+      }
+    }
 
     // 残ったモデルを再配置
     this.repositionAllModels();
@@ -1728,8 +1795,8 @@ export class VRMViewer {
    */
   enableDirectionalLightTransform(): void {
     if (this.lightTransformControls && this.directionalLightProxy) {
-      // プロキシを表示する
-      this.setLightProxyVisible(true);
+      // プロキシは非表示のままTransformControlsに使用する
+      // this.setLightProxyVisible(true); // ワイヤーフレーム表示を無効化
       
       // プロキシの位置をライトと同じ位置に更新
       this.directionalLightProxy.position.copy(this.directionalLight.position);
@@ -1809,6 +1876,60 @@ export class VRMViewer {
    * @param callback ライト選択状態が変更された時に呼び出される関数
    */
   setLightSelectionCallback(callback: (isSelected: boolean) => void): void {
+    this.onLightSelectionChanged = callback;
+  }
+
+  /**
+   * ボーンコントローラーの設定
+   */
+  private setupBoneController(): void {
+    // ボーンコントローラーの初期化
+    this.boneController = new VRMBoneController(
+      this.scene,
+      this.camera,
+      this.renderer,
+      this.controls
+    );
+    
+    console.log('VRMBoneControllerを初期化しました');
+  }
+
+  /**
+   * ボーンの表示/非表示を切り替える
+   */
+  toggleBoneVisibility(visible?: boolean): boolean {
+    if (!this.boneController) return false;
+    return this.boneController.toggleBoneVisibility(visible);
+  }
+  
+  /**
+   * ボーン操作モードを設定（回転/移動）
+   */
+  setBoneTransformMode(mode: 'rotate' | 'translate'): void {
+    if (!this.boneController) return;
+    this.boneController.setTransformMode(mode);
+  }
+  
+  /**
+   * すべてのボーンをリセット
+   */
+  resetAllBonePoses(): void {
+    if (!this.boneController || !this.currentVRM) return;
+    this.boneController.resetPose();
+  }
+  
+  /**
+   * ボーン選択状態変更のコールバックを設定
+   */
+  setOnBoneSelectionChanged(callback: ((boneName: string | null) => void) | null): void {
+    if (!this.boneController) return;
+    this.boneController.setOnBoneSelectionChanged(callback);
+  }
+  
+  /**
+   * ライト選択状態変更のコールバックを設定
+   */
+  setOnLightSelectionChanged(callback: ((isSelected: boolean) => void) | null): void {
     this.onLightSelectionChanged = callback;
   }
 }

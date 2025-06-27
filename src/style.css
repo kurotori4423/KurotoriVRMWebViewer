@@ -345,6 +345,12 @@ body {
   cursor: not-allowed;
 }
 
+.control-btn.active {
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+}
+
 @media (prefers-color-scheme: dark) {
   .control-btn {
     background: #495057;
@@ -978,4 +984,12 @@ h3 {
   .sample-buttons {
     grid-template-columns: 1fr;
   }
+}
+
+/* ボーン操作セクション */
+.detail-body h4 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: #888;
 }
