@@ -372,3 +372,78 @@ else if (vrmMeta?.metaVersion !== undefined ||
 ### 次のステップ
 - フェーズ3.2: ライト調整機能の実装
 - フェーズ4: ポージング機能の実装
+
+## フェーズ3.2実装完了 - ライト調整機能
+
+### 実装内容（2025年6月27日）
+
+#### 1. ライト色調整機能
+- **VRMViewer.ts**: ライト色設定メソッド追加
+  - `setAmbientLightColor()`, `setDirectionalLightColor()`, `setRimLightColor()`
+  - `getAmbientLightColor()`, `getDirectionalLightColor()`, `getRimLightColor()`
+  - THREE.Color変換によるtype-safe実装
+
+- **main.ts**: カラーピッカーUI・イベントリスナー追加
+  - 環境光・方向性ライト・リムライト用カラーピッカー
+  - `new THREE.Color(colorString)`でリアルタイム色変更
+
+#### 2. ライト視覚化・操作機能
+- **VRMViewer.ts**: DirectionalLightHelper・TransformControls統合
+  - `setupLightHelpers()`: ライトヘルパー・TransformControls初期化
+  - `setLightHelpersVisible()`: ヘルパー表示切り替え
+  - `enableDirectionalLightTransform()`: 方向性ライト操作有効化
+  - `disableLightTransform()`: TransformControls無効化
+
+- **main.ts**: ライト操作UI追加
+  - 「ライトヘルパー表示」ボタン（状態連動でテキスト変更）
+  - 「方向性ライト選択」ボタン（TransformControls切り替え）
+
+#### 3. 設定保存・復元機能
+- **VRMViewer.ts**: `resetLights()`拡張
+  - 色・強度・位置の完全リセット
+  - TransformControls無効化
+
+- **main.ts**: UI状態リセット
+  - 全スライダー・カラーピッカー値復元
+  - ボタンテキスト状態復元
+
+#### 4. 技術的特徴
+- **型安全性**: TypeScriptによるstrict type checking
+- **リアルタイム更新**: カラーピッカーinputイベントでの即座反映
+- **UI一貫性**: ボタン状態とライト状態の完全同期
+- **OrbitControls統合**: TransformControls使用時の適切な制御無効化
+
+#### 5. 動作確認結果
+- ✅ VRM0サンプルでの全機能テスト完了
+- ✅ ライト色変更・ヘルパー表示・TransformControls操作確認
+- ✅ リセット機能の完全動作確認
+- ✅ 既存機能との干渉なし確認
+
+#### 今後の拡張対応
+- 新しいライトタイプやエフェクトへの対応は、`VRMViewer.ts`のライト設定メソッド追加とUIの拡張のみで対応可能
+- ユーザーからのフィードバックに基づく微調整や機能追加が容易
+
+## フェーズ4: ポージング機能の実装方針
+
+### 実装内容（2025年6月27日）
+1. **ポージング機能の概要**
+   - モデルに対するポーズの適用・保存・読み込み機能
+   - ユーザーが定義したポーズプリセットの管理
+
+2. **UI設計**
+   - ポーズ操作パネル: 現在のポーズの適用・リセットボタン
+   - プリセット管理パネル: プリセットの追加・削除・適用ボタン
+   - スライダー: 各関節の回転・位置調整用
+
+3. **技術的実装**
+   - **ポーズデータ構造**: 各関節のローカル座標・回転情報を含むJSON形式
+   - **ポーズ適用ロジック**: モデルのボーン階層に基づいたポーズの再現
+   - **UI連携**: スライダー操作によるリアルタイムポーズ変更
+
+4. **実装スケジュール**
+   - **フェーズ4.1**: 基本的なポーズ適用・保存機能の実装
+   - **フェーズ4.2**: プリセット管理機能の実装
+   - **フェーズ4.3**: UIの整備とユーザビリティ向上
+
+5. **次のステップ**
+   - フェーズ4: ポージング機能の実装
