@@ -632,10 +632,10 @@ export class VRMViewer {
       opacity: 0.3
     });
 
-    // ワールド座標系でモデルの境界ボックスを計算
-    const box = new THREE.Box3().setFromObject(vrm.scene);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    // モデルのワールド境界ボックスを直接計算
+    const worldBox = new THREE.Box3().setFromObject(vrm.scene);
+    const worldCenter = worldBox.getCenter(new THREE.Vector3());
+    const size = worldBox.getSize(new THREE.Vector3());
 
     // アウトライン用のボックスジオメトリ作成
     const outlineGeometry = new THREE.BoxGeometry(
@@ -646,12 +646,12 @@ export class VRMViewer {
 
     this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
     
-    // ワールド座標系での中心位置を使用
-    this.outlineMesh.position.copy(center);
+    // アウトラインの位置をワールド境界ボックスの中心に設定
+    this.outlineMesh.position.copy(worldCenter);
     
     this.scene.add(this.outlineMesh);
     
-    console.log(`アウトライン表示シンプル版: モデル位置(${vrm.scene.position.x.toFixed(2)}, ${vrm.scene.position.y.toFixed(2)}, ${vrm.scene.position.z.toFixed(2)}), 中心位置(${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)})`);
+    console.log(`アウトライン表示: モデル位置(${vrm.scene.position.x.toFixed(2)}, ${vrm.scene.position.y.toFixed(2)}, ${vrm.scene.position.z.toFixed(2)}), ワールド中心(${worldCenter.x.toFixed(2)}, ${worldCenter.y.toFixed(2)}, ${worldCenter.z.toFixed(2)}), サイズ(${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)})`);
   }
 
   /**
