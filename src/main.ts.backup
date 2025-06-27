@@ -1,6 +1,6 @@
 import './style.css';
 import * as THREE from 'three';
-import { VRMViewerRefactored } from './core/VRMViewerRefactored';
+import { VRMViewer } from './core/VRMViewer';
 
 /**
  * アプリケーションのエントリーポイント
@@ -215,7 +215,7 @@ async function main() {
 
   // VRMビューワーを初期化
   const canvas = document.getElementById('vrm-canvas') as HTMLCanvasElement;
-  const vrmViewer = new VRMViewerRefactored(canvas);
+  const vrmViewer = new VRMViewer(canvas);
   
   try {
     await vrmViewer.initialize();
@@ -245,7 +245,7 @@ async function main() {
 /**
  * ファイル入力関連のイベントハンドラを設定
  */
-function setupFileInputHandlers(vrmViewer: VRMViewerRefactored): void {
+function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   // モーダル関連の要素
   const openModalBtn = document.getElementById('open-load-modal') as HTMLButtonElement;
   const closeModalBtn = document.getElementById('close-modal') as HTMLButtonElement;

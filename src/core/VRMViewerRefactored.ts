@@ -90,7 +90,12 @@ export class VRMViewerRefactored {
    * レンダラーの設定
    */
   private setupRenderer(): void {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // キャンバスの実際のサイズを取得（フォールバック付き）
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
+    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+    
+    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -103,8 +108,13 @@ export class VRMViewerRefactored {
    * カメラの設定
    */
   private setupCamera(): void {
+    // キャンバスの実際のサイズを取得（フォールバック付き）
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
+    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+    
     this.camera.fov = 75;
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.aspect = width / height;
     this.camera.near = 0.1;
     this.camera.far = 1000;
     this.camera.position.set(0, 1.5, 3);
@@ -131,10 +141,10 @@ export class VRMViewerRefactored {
    * ViewportGizmoの設定
    */
   private setupViewportGizmo(): void {
-    this.viewportGizmo.target = this.controls.target;
-    this.viewportGizmo.addEventListener('change', () => {
-      this.controls.update();
-    });
+    // OrbitControlsをViewportGizmoに接続
+    this.viewportGizmo.attachControls(this.controls);
+    
+    console.log('ViewportGizmo が正常に初期化されました');
   }
 
   /**
@@ -165,9 +175,14 @@ export class VRMViewerRefactored {
    * ウィンドウリサイズ処理
    */
   private onWindowResize(): void {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    // キャンバスの実際のサイズを取得（フォールバック付き）
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
+    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+    
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(width, height);
     this.viewportGizmo.update();
   }
 
@@ -175,9 +190,10 @@ export class VRMViewerRefactored {
    * キャンバスクリック処理
    */
   private onCanvasClick(event: MouseEvent): void {
-    // マウス座標を正規化
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // マウス座標を正規化（キャンバスの実際のサイズに基づく）
+    const rect = this.canvas.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     // レイキャスト
     this.raycaster.setFromCamera(this.mouse, this.camera);
@@ -387,39 +403,37 @@ export class VRMViewerRefactored {
     const models = this.vrmManager.getVRMModels();
     if (models.length === 0) return;
 
-    // 全モデルのバウンディングボックスを計算
     const box = new THREE.Box3();
     models.forEach(vrm => {
       if (vrm.scene) {
-        const modelBox = new THREE.Box3().setFromObject(vrm.scene);
-        box.union(modelBox);
+        box.expandByObject(vrm.scene);
       }
     });
 
-    if (box.isEmpty()) return;
+    if (!box.isEmpty()) {
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = this.camera.fov * (Math.PI / 180);
+      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+      cameraZ *= 1.5; // 少し余裕を持たせる
 
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = this.camera.fov * (Math.PI / 180);
-    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-    cameraZ *= 1.5;
-
-    this.camera.position.set(center.x, center.y + size.y * 0.3, center.z + cameraZ);
-    this.controls.target.copy(center);
-    this.controls.update();
+      this.camera.position.set(center.x, center.y + size.y * 0.3, center.z + cameraZ);
+      this.controls.target.copy(center);
+      this.controls.update();
+    }
   }
 
-  async resetCameraAnimated(_duration: number = 1500): Promise<void> {
-    // 簡易実装：アニメーションなしで即座に移動
-    this.resetCameraToFitAll();
-    return Promise.resolve();
+  async resetCameraAnimated(duration: number = 1500): Promise<void> {
+    // シンプルな実装 - 実際のアニメーションは今のところスキップ
+    this.resetCameraToDefault();
+    return new Promise(resolve => setTimeout(resolve, duration));
   }
 
   centerModel(): void {
     const selectedModel = this.selectionManager.getSelectedModel();
-    if (selectedModel) {
-      this.adjustCameraToModel(selectedModel);
+    if (selectedModel && selectedModel.scene) {
+      selectedModel.scene.position.set(0, 0, 0);
     }
   }
 
@@ -524,6 +538,29 @@ export class VRMViewerRefactored {
 
   resetBackground(): void {
     this.backgroundController.resetBackground();
+  }
+
+  /**
+   * キャンバスサイズを強制的に更新
+   */
+  public updateCanvasSize(): void {
+    // 少し遅延を入れてからサイズ更新（CSS適用を待つ）
+    setTimeout(() => {
+      const canvasRect = this.canvas.getBoundingClientRect();
+      
+      // 有効なサイズが取得できない場合はフォールバック
+      const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
+      const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+      
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(width, height);
+      
+      // ViewportGizmoの更新
+      this.viewportGizmo.update();
+      
+      console.log(`Canvas size updated: ${width}x${height}`);
+    }, 100);
   }
 
   /**
