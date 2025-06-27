@@ -19,6 +19,7 @@ export class VRMViewer {
   private gltfLoader: GLTFLoader;
   private currentVRM: VRM | null = null;
   private vrmModels: VRM[] = []; // 複数VRM管理用
+  private vrmSourceData: ArrayBuffer[] = []; // 各VRMの元データを保持（複製用）
   private selectedModelIndex: number = -1; // 選択されたモデルのインデックス
   private outlineMesh: THREE.Mesh | null = null; // アウトライン表示用
 
@@ -237,6 +238,7 @@ export class VRMViewer {
         // VRMをシーンに追加
         this.currentVRM = vrm;
         this.vrmModels = [vrm]; // 単体読み込みの場合は配列をリセット
+        this.vrmSourceData = [arrayBuffer.slice(0)]; // 元データを保存（複製用）
         this.scene.add(vrm.scene);
 
         // VRMの向きと位置を調整
@@ -282,6 +284,7 @@ export class VRMViewer {
       const index = this.vrmModels.indexOf(this.currentVRM);
       if (index !== -1) {
         this.vrmModels.splice(index, 1);
+        this.vrmSourceData.splice(index, 1); // 元データも削除
       }
       
       this.currentVRM = null;
@@ -320,6 +323,21 @@ export class VRMViewer {
    * モデルを中央に配置
    */
   centerModel(): void {
+    // 選択されたモデルがある場合は選択されたモデルを対象にする
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      // モデルのバウンディングボックスを計算
+      const box = new THREE.Box3().setFromObject(selectedModel.scene);
+      const center = box.getCenter(new THREE.Vector3());
+
+      // モデルを原点に移動
+      selectedModel.scene.position.copy(center.negate());
+      
+      console.log('選択されたモデルを中央に配置しました');
+      return;
+    }
+
+    // 選択されたモデルがない場合は、currentVRMを対象にする
     if (!this.currentVRM) {
       console.warn('VRMモデルが読み込まれていません');
       return;
@@ -339,6 +357,15 @@ export class VRMViewer {
    * モデルのスケールを調整
    */
   setModelScale(scale: number): void {
+    // 選択されたモデルがある場合は選択されたモデルを対象にする
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      selectedModel.scene.scale.setScalar(scale);
+      console.log(`選択されたモデルのスケールを ${scale} に設定しました`);
+      return;
+    }
+
+    // 選択されたモデルがない場合は、currentVRMを対象にする
     if (!this.currentVRM) {
       console.warn('VRMモデルが読み込まれていません');
       return;
@@ -352,6 +379,15 @@ export class VRMViewer {
    * モデルの位置を設定
    */
   setModelPosition(x: number, y: number, z: number): void {
+    // 選択されたモデルがある場合は選択されたモデルを対象にする
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      selectedModel.scene.position.set(x, y, z);
+      console.log(`選択されたモデルの位置を (${x}, ${y}, ${z}) に設定しました`);
+      return;
+    }
+
+    // 選択されたモデルがない場合は、currentVRMを対象にする
     if (!this.currentVRM) {
       console.warn('VRMモデルが読み込まれていません');
       return;
@@ -365,6 +401,15 @@ export class VRMViewer {
    * モデルの回転を設定
    */
   setModelRotation(x: number, y: number, z: number): void {
+    // 選択されたモデルがある場合は選択されたモデルを対象にする
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      selectedModel.scene.rotation.set(x, y, z);
+      console.log(`選択されたモデルの回転を (${x}, ${y}, ${z}) に設定しました`);
+      return;
+    }
+
+    // 選択されたモデルがない場合は、currentVRMを対象にする
     if (!this.currentVRM) {
       console.warn('VRMモデルが読み込まれていません');
       return;
@@ -429,6 +474,7 @@ export class VRMViewer {
 
         // VRMをリストに追加
         this.vrmModels.push(vrm);
+        this.vrmSourceData.push(arrayBuffer.slice(0)); // 元データを保存（複製用）
         
         // 最初のVRMの場合は currentVRM に設定
         if (!this.currentVRM) {
@@ -485,7 +531,9 @@ export class VRMViewer {
     });
     
     this.vrmModels = [];
+    this.vrmSourceData = []; // 元データもクリア
     this.currentVRM = null;
+    this.selectedModelIndex = -1; // 選択もクリア
     console.log('全てのVRMモデルを削除しました');
   }
 
@@ -515,10 +563,18 @@ export class VRMViewer {
 
     // 配列から削除
     this.vrmModels.splice(index, 1);
+    this.vrmSourceData.splice(index, 1); // 元データも削除
     
     // currentVRMが削除された場合は次のものを設定
     if (vrm === this.currentVRM) {
       this.currentVRM = this.vrmModels.length > 0 ? this.vrmModels[0] : null;
+    }
+
+    // 選択インデックスの調整
+    if (this.selectedModelIndex === index) {
+      this.selectedModelIndex = -1; // 削除されたモデルが選択されていた場合はクリア
+    } else if (this.selectedModelIndex > index) {
+      this.selectedModelIndex--; // インデックスをずらす
     }
 
     // 残りのモデルを再配置
@@ -614,6 +670,17 @@ export class VRMViewer {
       return this.vrmModels[this.selectedModelIndex];
     }
     return null;
+  }
+
+  /**
+   * 選択されたモデルの現在のスケール値を取得
+   */
+  getSelectedModelScale(): number {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel && selectedModel.scene) {
+      return selectedModel.scene.scale.x; // x, y, z は同じ値のはず（setScalarで設定）
+    }
+    return 1.0; // デフォルト値
   }
 
   /**
@@ -726,6 +793,7 @@ export class VRMViewer {
 
     // 配列から削除
     this.vrmModels.splice(this.selectedModelIndex, 1);
+    this.vrmSourceData.splice(this.selectedModelIndex, 1); // 元データも削除
 
     // 選択をクリア
     this.hideOutline();
@@ -744,22 +812,21 @@ export class VRMViewer {
     const selectedModel = this.getSelectedModel();
     if (!selectedModel) return false;
 
+    const selectedIndex = this.selectedModelIndex;
+    if (selectedIndex < 0 || selectedIndex >= this.vrmSourceData.length) {
+      console.error('選択されたモデルの元データが見つかりません');
+      return false;
+    }
+
     try {
-      // 元のモデルのシーンをクローン
-      const clonedScene = selectedModel.scene.clone(true);
+      // 元のArrayBufferから新しいVRMインスタンスを作成
+      const sourceData = this.vrmSourceData[selectedIndex];
+      const clonedArrayBuffer = sourceData.slice(0); // ArrayBufferをコピー
       
-      // VRMUtilsを使って新しいVRMインスタンスを作成
-      const clonedVRM = VRMUtils.deepDispose(clonedScene) as any as VRM;
+      // 新しいVRMを追加読み込みとして処理
+      await this.addVRMFromArrayBuffer(clonedArrayBuffer);
       
-      // 位置を少しずらして追加
-      clonedScene.position.x += 1.5;
-      
-      this.scene.add(clonedScene);
-      this.vrmModels.push(clonedVRM);
-      
-      // モデルを再配置
-      this.repositionAllModels();
-      
+      console.log('モデルの複製が完了しました');
       return true;
     } catch (error) {
       console.error('モデルの複製に失敗しました:', error);

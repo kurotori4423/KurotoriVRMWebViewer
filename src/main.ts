@@ -421,6 +421,10 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
   const selectedInfoDiv = document.getElementById('selected-model-info');
   const selectedNameSpan = document.getElementById('selected-model-name') as HTMLSpanElement;
   
+  // スケールスライダーとその値表示を取得
+  const modelScaleSlider = document.getElementById('model-scale') as HTMLInputElement;
+  const scaleValueSpan = document.getElementById('scale-value') as HTMLSpanElement;
+  
   if (selectedModel && selectedIndex >= 0) {
     // モデルが選択されている場合
     focusBtn.disabled = false;
@@ -440,6 +444,11 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
     // 表示/非表示ボタンのテキスト更新
     toggleBtn.textContent = selectedModel.scene.visible ? '非表示' : '表示';
     
+    // スケールスライダーを選択されたモデルの現在のスケール値に更新
+    const currentScale = vrmViewer.getSelectedModelScale();
+    modelScaleSlider.value = currentScale.toString();
+    scaleValueSpan.textContent = currentScale.toFixed(1);
+    
   } else {
     // モデルが選択されていない場合
     focusBtn.disabled = true;
@@ -448,6 +457,10 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
     deleteBtn.disabled = true;
     
     selectedInfoDiv?.classList.add('hidden');
+    
+    // モデルが選択されていない場合はスライダーをデフォルト値にリセット
+    modelScaleSlider.value = '1.0';
+    scaleValueSpan.textContent = '1.0';
     selectedNameSpan.textContent = '未選択';
     toggleBtn.textContent = '表示切替';
   }
