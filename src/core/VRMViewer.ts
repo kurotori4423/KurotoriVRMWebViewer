@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { ViewportGizmo } from 'three-viewport-gizmo';
 
 /**
  * VRMビューワーのメインクラス
@@ -14,6 +15,9 @@ export class VRMViewer {
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
   private animationId: number | null = null;
+  
+  // ViewportGizmo関連
+  private viewportGizmo: ViewportGizmo;
   
   // VRM関連
   private gltfLoader: GLTFLoader;
@@ -30,6 +34,9 @@ export class VRMViewer {
     this.renderer = new THREE.WebGLRenderer({ canvas });
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     
+    // ViewportGizmoの初期化
+    this.viewportGizmo = new ViewportGizmo(this.camera, this.renderer);
+    
     // GLTFローダーの初期化とVRMプラグインの設定
     this.gltfLoader = new GLTFLoader();
     this.gltfLoader.register((parser) => {
@@ -45,6 +52,7 @@ export class VRMViewer {
     this.setupCamera();
     this.setupLights();
     this.setupControls();
+    this.setupViewportGizmo();
     this.setupHelpers();
     this.setupEventListeners();
     this.startRenderLoop();
@@ -121,6 +129,16 @@ export class VRMViewer {
   }
 
   /**
+   * ViewportGizmoの設定
+   */
+  private setupViewportGizmo(): void {
+    // OrbitControlsをViewportGizmoに接続
+    this.viewportGizmo.attachControls(this.controls);
+    
+    console.log('ViewportGizmo が正常に初期化されました');
+  }
+
+  /**
    * ヘルパーオブジェクトの設定（グリッド、軸など）
    */
   private setupHelpers(): void {
@@ -148,6 +166,9 @@ export class VRMViewer {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // ViewportGizmoの更新
+    this.viewportGizmo.update();
   }
 
   /**
@@ -162,6 +183,9 @@ export class VRMViewer {
       
       // レンダリング
       this.renderer.render(this.scene, this.camera);
+      
+      // ViewportGizmoの描画
+      this.viewportGizmo.render();
     };
     
     animate();
