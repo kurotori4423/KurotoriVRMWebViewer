@@ -76,6 +76,9 @@ export class VRMViewer {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
+    
+    // デフォルト背景色を設定
+    this.scene.background = new THREE.Color('#2a2a2a');
   }
 
   /**
@@ -1018,5 +1021,72 @@ export class VRMViewer {
     this.setAmbientLightIntensity(0.3);
     this.setDirectionalLightIntensity(1.0);
     this.setRimLightIntensity(0.5);
+  }
+
+  /**
+   * 背景色を単色に設定
+   * @param color 背景色（16進数カラー文字列 例: "#ffffff" または CSS色名）
+   */
+  setBackgroundColor(color: string): void {
+    this.scene.background = new THREE.Color(color);
+  }
+
+  /**
+   * 背景を透明に設定
+   */
+  setBackgroundTransparent(): void {
+    this.scene.background = null;
+  }
+
+  /**
+   * 背景をグラデーションに設定
+   * @param topColor 上部の色
+   * @param bottomColor 下部の色
+   */
+  setBackgroundGradient(topColor: string, bottomColor: string): void {
+    // グラデーション用のキューブテクスチャを作成
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d')!;
+    canvas.width = 512;
+    canvas.height = 512;
+
+    // グラデーションを描画
+    const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, topColor);
+    gradient.addColorStop(1, bottomColor);
+
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // テクスチャを作成
+    const texture = new THREE.CanvasTexture(canvas);
+    this.scene.background = texture;
+  }
+
+  /**
+   * 現在の背景設定を取得
+   * @returns 背景の種類と色情報
+   */
+  getBackgroundInfo(): { type: 'color' | 'gradient' | 'transparent', colors?: string[] } {
+    if (!this.scene.background) {
+      return { type: 'transparent' };
+    }
+
+    if (this.scene.background instanceof THREE.Color) {
+      return { 
+        type: 'color', 
+        colors: [`#${this.scene.background.getHexString()}`] 
+      };
+    }
+
+    // テクスチャ（グラデーション）の場合
+    return { type: 'gradient' };
+  }
+
+  /**
+   * 背景をデフォルト設定にリセット
+   */
+  resetBackground(): void {
+    this.setBackgroundColor('#2a2a2a'); // ダークグレーをデフォルトに
   }
 }

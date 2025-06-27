@@ -76,6 +76,34 @@ async function main() {
             </div>
           </div>
           
+          <div id="background-controls">
+            <h3>背景設定</h3>
+            <div class="control-group">
+              <label for="background-color">背景色:</label>
+              <input type="color" id="background-color" value="#2a2a2a" />
+              <button id="transparent-background" class="control-btn">透明</button>
+            </div>
+            <div class="control-group">
+              <h4>プリセット背景</h4>
+              <button class="preset-color-btn" data-color="#ffffff">白</button>
+              <button class="preset-color-btn" data-color="#000000">黒</button>
+              <button class="preset-color-btn" data-color="#2a2a2a">グレー</button>
+              <button class="preset-color-btn" data-color="#1e3a8a">青</button>
+              <button class="preset-color-btn" data-color="#166534">緑</button>
+            </div>
+            <div class="control-group">
+              <h4>グラデーション背景</h4>
+              <label for="gradient-top">上部:</label>
+              <input type="color" id="gradient-top" value="#87ceeb" />
+              <label for="gradient-bottom">下部:</label>
+              <input type="color" id="gradient-bottom" value="#ffffff" />
+              <button id="apply-gradient" class="control-btn">適用</button>
+            </div>
+            <div class="control-group">
+              <button id="reset-background" class="control-btn">背景リセット</button>
+            </div>
+          </div>
+          
           <div id="vrm-list-container">
             <h3>読み込み済みモデル</h3>
             <div id="vrm-list">
@@ -303,6 +331,9 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
 
   // ライト調整のイベントハンドラを設定
   setupLightingHandlers(vrmViewer);
+
+  // 背景設定のイベントハンドラを設定
+  setupBackgroundHandlers(vrmViewer);
 }
 
 /**
@@ -702,6 +733,52 @@ function hideError(): void {
   if (errorElement) {
     errorElement.classList.add('hidden');
   }
+}
+
+/**
+ * 背景設定のイベントハンドラを設定
+ */
+function setupBackgroundHandlers(vrmViewer: VRMViewer): void {
+  // 背景色カラーピッカー
+  const backgroundColorPicker = document.getElementById('background-color') as HTMLInputElement;
+  backgroundColorPicker.addEventListener('input', (event) => {
+    const color = (event.target as HTMLInputElement).value;
+    vrmViewer.setBackgroundColor(color);
+  });
+
+  // 透明背景ボタン
+  const transparentBackgroundBtn = document.getElementById('transparent-background') as HTMLButtonElement;
+  transparentBackgroundBtn.addEventListener('click', () => {
+    vrmViewer.setBackgroundTransparent();
+  });
+
+  // プリセット背景色ボタン
+  const presetColorButtons = document.querySelectorAll('.preset-color-btn');
+  presetColorButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const color = (button as HTMLElement).dataset.color!;
+      vrmViewer.setBackgroundColor(color);
+      backgroundColorPicker.value = color;
+    });
+  });
+
+  // グラデーション背景
+  const gradientTopPicker = document.getElementById('gradient-top') as HTMLInputElement;
+  const gradientBottomPicker = document.getElementById('gradient-bottom') as HTMLInputElement;
+  const applyGradientBtn = document.getElementById('apply-gradient') as HTMLButtonElement;
+
+  applyGradientBtn.addEventListener('click', () => {
+    const topColor = gradientTopPicker.value;
+    const bottomColor = gradientBottomPicker.value;
+    vrmViewer.setBackgroundGradient(topColor, bottomColor);
+  });
+
+  // 背景リセットボタン
+  const resetBackgroundBtn = document.getElementById('reset-background') as HTMLButtonElement;
+  resetBackgroundBtn.addEventListener('click', () => {
+    vrmViewer.resetBackground();
+    backgroundColorPicker.value = '#2a2a2a';
+  });
 }
 
 // アプリケーションを開始
