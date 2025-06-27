@@ -632,7 +632,7 @@ export class VRMViewer {
       opacity: 0.3
     });
 
-    // モデルの境界ボックスを計算
+    // ワールド座標系でモデルの境界ボックスを計算
     const box = new THREE.Box3().setFromObject(vrm.scene);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -645,8 +645,13 @@ export class VRMViewer {
     );
 
     this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    
+    // ワールド座標系での中心位置を使用
     this.outlineMesh.position.copy(center);
+    
     this.scene.add(this.outlineMesh);
+    
+    console.log(`アウトライン表示シンプル版: モデル位置(${vrm.scene.position.x.toFixed(2)}, ${vrm.scene.position.y.toFixed(2)}, ${vrm.scene.position.z.toFixed(2)}), 中心位置(${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)})`);
   }
 
   /**
