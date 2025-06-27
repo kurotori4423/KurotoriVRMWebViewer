@@ -19,6 +19,8 @@ export class VRMViewer {
   private gltfLoader: GLTFLoader;
   private currentVRM: VRM | null = null;
   private vrmModels: VRM[] = []; // 複数VRM管理用
+  private selectedModelIndex: number = -1; // 選択されたモデルのインデックス
+  private outlineMesh: THREE.Mesh | null = null; // アウトライン表示用
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -579,5 +581,189 @@ export class VRMViewer {
    */
   getVRMCount(): number {
     return this.vrmModels.length;
+  }
+
+  // ===== モデル選択・操作機能 =====
+
+  /**
+   * 指定されたインデックスのモデルを選択
+   */
+  selectModel(index: number): void {
+    if (index < 0 || index >= this.vrmModels.length) {
+      this.selectedModelIndex = -1;
+      this.hideOutline();
+      return;
+    }
+
+    this.selectedModelIndex = index;
+    this.showOutline(this.vrmModels[index]);
+  }
+
+  /**
+   * 現在選択されているモデルのインデックスを取得
+   */
+  getSelectedModelIndex(): number {
+    return this.selectedModelIndex;
+  }
+
+  /**
+   * 現在選択されているモデルを取得
+   */
+  getSelectedModel(): VRM | null {
+    if (this.selectedModelIndex >= 0 && this.selectedModelIndex < this.vrmModels.length) {
+      return this.vrmModels[this.selectedModelIndex];
+    }
+    return null;
+  }
+
+  /**
+   * 選択されたモデルにアウトライン表示
+   */
+  private showOutline(vrm: VRM): void {
+    this.hideOutline();
+
+    if (!vrm.scene) return;
+
+    // アウトライン用のマテリアル作成
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.3
+    });
+
+    // モデルの境界ボックスを計算
+    const box = new THREE.Box3().setFromObject(vrm.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+
+    // アウトライン用のボックスジオメトリ作成
+    const outlineGeometry = new THREE.BoxGeometry(
+      size.x * 1.1,
+      size.y * 1.1, 
+      size.z * 1.1
+    );
+
+    this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    this.outlineMesh.position.copy(center);
+    this.scene.add(this.outlineMesh);
+  }
+
+  /**
+   * アウトライン表示を隠す
+   */
+  private hideOutline(): void {
+    if (this.outlineMesh) {
+      this.scene.remove(this.outlineMesh);
+      this.outlineMesh.geometry.dispose();
+      if (Array.isArray(this.outlineMesh.material)) {
+        this.outlineMesh.material.forEach(material => material.dispose());
+      } else {
+        this.outlineMesh.material.dispose();
+      }
+      this.outlineMesh = null;
+    }
+  }
+
+  /**
+   * 選択されたモデルにカメラをフォーカス
+   */
+  focusOnSelectedModel(): void {
+    const selectedModel = this.getSelectedModel();
+    if (!selectedModel || !selectedModel.scene) return;
+
+    // 既存のadjustCameraToModelメソッドを利用
+    this.adjustCameraToModel(selectedModel);
+  }
+
+  /**
+   * 選択されたモデルの表示/非表示を切り替え
+   */
+  toggleSelectedModelVisibility(): boolean {
+    const selectedModel = this.getSelectedModel();
+    if (!selectedModel || !selectedModel.scene) return false;
+
+    selectedModel.scene.visible = !selectedModel.scene.visible;
+    return selectedModel.scene.visible;
+  }
+
+  /**
+   * 選択されたモデルを削除
+   */
+  deleteSelectedModel(): boolean {
+    if (this.selectedModelIndex < 0 || this.selectedModelIndex >= this.vrmModels.length) {
+      return false;
+    }
+
+    const modelToDelete = this.vrmModels[this.selectedModelIndex];
+    
+    // シーンから削除
+    if (modelToDelete.scene) {
+      this.scene.remove(modelToDelete.scene);
+    }
+
+    // リソースの解放（既存の処理パターンを使用）
+    if (modelToDelete.scene) {
+      modelToDelete.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((material) => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+    }
+
+    // 配列から削除
+    this.vrmModels.splice(this.selectedModelIndex, 1);
+
+    // 選択をクリア
+    this.hideOutline();
+    this.selectedModelIndex = -1;
+
+    // 残ったモデルを再配置
+    this.repositionAllModels();
+
+    return true;
+  }
+
+  /**
+   * 選択されたモデルを複製
+   */
+  async duplicateSelectedModel(): Promise<boolean> {
+    const selectedModel = this.getSelectedModel();
+    if (!selectedModel) return false;
+
+    try {
+      // 元のモデルのシーンをクローン
+      const clonedScene = selectedModel.scene.clone(true);
+      
+      // VRMUtilsを使って新しいVRMインスタンスを作成
+      const clonedVRM = VRMUtils.deepDispose(clonedScene) as any as VRM;
+      
+      // 位置を少しずらして追加
+      clonedScene.position.x += 1.5;
+      
+      this.scene.add(clonedScene);
+      this.vrmModels.push(clonedVRM);
+      
+      // モデルを再配置
+      this.repositionAllModels();
+      
+      return true;
+    } catch (error) {
+      console.error('モデルの複製に失敗しました:', error);
+      return false;
+    }
+  }
+
+  /**
+   * モデル選択をクリア
+   */
+  clearSelection(): void {
+    this.selectedModelIndex = -1;
+    this.hideOutline();
   }
 }

@@ -47,6 +47,30 @@ async function main() {
             </div>
           </div>
           
+          <div id="vrm-list-container">
+            <h3>読み込み済みモデル</h3>
+            <div id="vrm-list">
+              <div id="no-models-message" class="no-models">
+                モデルが読み込まれていません
+              </div>
+            </div>
+          </div>
+          
+          <div id="selected-model-controls">
+            <h3>選択モデル操作</h3>
+            <div id="selected-model-info" class="hidden">
+              <span id="selected-model-name">未選択</span>
+            </div>
+            <div class="control-group">
+              <button id="focus-selected" class="control-btn" disabled>フォーカス</button>
+              <button id="toggle-visibility" class="control-btn" disabled>表示切替</button>
+            </div>
+            <div class="control-group">
+              <button id="duplicate-selected" class="control-btn" disabled>複製</button>
+              <button id="delete-selected" class="danger-btn" disabled>削除</button>
+            </div>
+          </div>
+          
           <div id="drag-drop-zone">
             ここにVRMファイルをドラッグ&ドロップ
           </div>
@@ -99,12 +123,19 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   const clearAllBtn = document.getElementById('clear-all-vrms') as HTMLButtonElement;
   const vrmCountSpan = document.getElementById('vrm-count') as HTMLSpanElement;
 
+  // モデル選択関連のコントロール
+  const focusSelectedBtn = document.getElementById('focus-selected') as HTMLButtonElement;
+  const toggleVisibilityBtn = document.getElementById('toggle-visibility') as HTMLButtonElement;
+  const duplicateSelectedBtn = document.getElementById('duplicate-selected') as HTMLButtonElement;
+  const deleteSelectedBtn = document.getElementById('delete-selected') as HTMLButtonElement;
+
   // ファイル選択
   fileInput.addEventListener('change', async (event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       await loadVRMFile(vrmViewer, file);
       updateVRMCount(vrmViewer, vrmCountSpan);
+      updateModelList(vrmViewer);
     }
   });
 
@@ -112,12 +143,14 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   vrm0Button.addEventListener('click', async () => {
     await loadVRMFromURL(vrmViewer, '/samples/sample_vrm0.vrm');
     updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
   // プリセットボタン - VRM1
   vrm1Button.addEventListener('click', async () => {
     await loadVRMFromURL(vrmViewer, '/samples/sample_vrm1.vrm');
     updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
   // モデル操作
@@ -139,17 +172,20 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   addVrm0Btn.addEventListener('click', async () => {
     await addVRMFromURL(vrmViewer, '/samples/sample_vrm0.vrm');
     updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
   addVrm1Btn.addEventListener('click', async () => {
     await addVRMFromURL(vrmViewer, '/samples/sample_vrm1.vrm');
     updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
   clearAllBtn.addEventListener('click', () => {
     if (confirm('全てのVRMモデルを削除しますか？')) {
       vrmViewer.removeAllVRMs();
       updateVRMCount(vrmViewer, vrmCountSpan);
+      updateModelList(vrmViewer);
       // スケールスライダーをリセット
       modelScaleSlider.value = '1.0';
       scaleValueSpan.textContent = '1.0';
@@ -176,14 +212,47 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
       if (file.name.toLowerCase().endsWith('.vrm')) {
         await addVRMFile(vrmViewer, file);
         updateVRMCount(vrmViewer, vrmCountSpan);
+        updateModelList(vrmViewer);
       } else {
         showError('VRMファイルを選択してください');
       }
     }
   });
 
+  // モデル選択関連のイベントリスナー
+  focusSelectedBtn.addEventListener('click', () => {
+    vrmViewer.focusOnSelectedModel();
+  });
+
+  toggleVisibilityBtn.addEventListener('click', () => {
+    const isVisible = vrmViewer.toggleSelectedModelVisibility();
+    toggleVisibilityBtn.textContent = isVisible ? '非表示' : '表示';
+  });
+
+  duplicateSelectedBtn.addEventListener('click', async () => {
+    const success = await vrmViewer.duplicateSelectedModel();
+    if (success) {
+      updateVRMCount(vrmViewer, vrmCountSpan);
+      updateModelList(vrmViewer);
+    } else {
+      showError('モデルの複製に失敗しました');
+    }
+  });
+
+  deleteSelectedBtn.addEventListener('click', () => {
+    if (confirm('選択されたモデルを削除しますか？')) {
+      const success = vrmViewer.deleteSelectedModel();
+      if (success) {
+        updateVRMCount(vrmViewer, vrmCountSpan);
+        updateModelList(vrmViewer);
+        updateSelectedModelControls(vrmViewer);
+      }
+    }
+  });
+
   // 初期カウント更新
   updateVRMCount(vrmViewer, vrmCountSpan);
+  updateModelList(vrmViewer);
 }
 
 /**
@@ -263,6 +332,124 @@ async function addVRMFile(vrmViewer: VRMViewer, file: File): Promise<void> {
     showLoading(false);
     console.error('VRMファイルの追加読み込みに失敗:', error);
     showError(`VRMファイルの追加読み込みに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * VRMモデルリストUIの更新
+ */
+function updateModelList(vrmViewer: VRMViewer): void {
+  const vrmListContainer = document.getElementById('vrm-list');
+  const noModelsMessage = document.getElementById('no-models-message');
+  
+  if (!vrmListContainer || !noModelsMessage) return;
+
+  const models = vrmViewer.getVRMModels();
+  
+  // 既存のリスト項目をクリア（no-models-messageは保持）
+  const existingItems = vrmListContainer.querySelectorAll('.model-item');
+  existingItems.forEach(item => item.remove());
+  
+  if (models.length === 0) {
+    noModelsMessage.classList.remove('hidden');
+    return;
+  }
+  
+  noModelsMessage.classList.add('hidden');
+  
+  // モデルごとにリスト項目を作成
+  models.forEach((vrm: any, index: number) => {
+    const modelItem = document.createElement('div');
+    modelItem.className = 'model-item';
+    modelItem.dataset.index = index.toString();
+    
+    // モデル名を取得（メタ情報があれば使用、なければファイル名など）
+    let modelName = `Model ${index + 1}`;
+    if (vrm.meta && vrm.meta.name) {
+      modelName = vrm.meta.name;
+    }
+    
+    modelItem.innerHTML = `
+      <div class="model-info">
+        <div class="model-name">${modelName}</div>
+        <div class="model-index">Index: ${index}</div>
+      </div>
+    `;
+    
+    // クリックイベントを追加
+    modelItem.addEventListener('click', () => {
+      selectModelInList(vrmViewer, index);
+    });
+    
+    vrmListContainer.appendChild(modelItem);
+  });
+}
+
+/**
+ * リスト内でモデルを選択
+ */
+function selectModelInList(vrmViewer: VRMViewer, index: number): void {
+  // VRMViewerでモデルを選択
+  vrmViewer.selectModel(index);
+  
+  // UI上でも選択状態を更新
+  const allItems = document.querySelectorAll('.model-item');
+  allItems.forEach((item, i) => {
+    if (i === index) {
+      item.classList.add('selected');
+    } else {
+      item.classList.remove('selected');
+    }
+  });
+  
+  // 選択モデル操作コントロールを更新
+  updateSelectedModelControls(vrmViewer);
+}
+
+/**
+ * 選択モデル操作コントロールの状態を更新
+ */
+function updateSelectedModelControls(vrmViewer: VRMViewer): void {
+  const selectedModel = vrmViewer.getSelectedModel();
+  const selectedIndex = vrmViewer.getSelectedModelIndex();
+  
+  // ボタンの有効/無効状態を更新
+  const focusBtn = document.getElementById('focus-selected') as HTMLButtonElement;
+  const toggleBtn = document.getElementById('toggle-visibility') as HTMLButtonElement;
+  const duplicateBtn = document.getElementById('duplicate-selected') as HTMLButtonElement;
+  const deleteBtn = document.getElementById('delete-selected') as HTMLButtonElement;
+  const selectedInfoDiv = document.getElementById('selected-model-info');
+  const selectedNameSpan = document.getElementById('selected-model-name') as HTMLSpanElement;
+  
+  if (selectedModel && selectedIndex >= 0) {
+    // モデルが選択されている場合
+    focusBtn.disabled = false;
+    toggleBtn.disabled = false;
+    duplicateBtn.disabled = false;
+    deleteBtn.disabled = false;
+    
+    selectedInfoDiv?.classList.remove('hidden');
+    
+    // モデル名の表示
+    let modelName = `Model ${selectedIndex + 1}`;
+    if (selectedModel.meta && selectedModel.meta.name) {
+      modelName = selectedModel.meta.name;
+    }
+    selectedNameSpan.textContent = modelName;
+    
+    // 表示/非表示ボタンのテキスト更新
+    toggleBtn.textContent = selectedModel.scene.visible ? '非表示' : '表示';
+    
+  } else {
+    // モデルが選択されていない場合
+    focusBtn.disabled = true;
+    toggleBtn.disabled = true;
+    duplicateBtn.disabled = true;
+    deleteBtn.disabled = true;
+    
+    selectedInfoDiv?.classList.add('hidden');
+    selectedNameSpan.textContent = '未選択';
+    toggleBtn.textContent = '表示切替';
   }
 }
 
