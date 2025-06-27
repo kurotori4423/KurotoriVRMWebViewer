@@ -945,7 +945,7 @@ function showMetaInfoModal(vrmViewer: VRMViewer, index: number): void {
  * VRMメタ情報のHTMLを生成
  */
 function generateMetaInfoHTML(vrm: any, index: number): string {
-  const vrmMeta = vrm.vrmMeta; // 修正: vrmMetaから取得
+  const vrmMeta = vrm.vrmMeta; // 正規化されたメタ情報から取得
   if (!vrmMeta) {
     return '<div class="meta-info-section"><p>メタ情報が利用できません。</p></div>';
   }
@@ -971,13 +971,22 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
     </div>`;
   }
 
-  // バージョン情報（VRM1.0の場合は metaVersion、VRM0.xの場合は specVersion）
-  const vrmVersion = vrmMeta.metaVersion !== undefined ? `VRM ${vrmMeta.metaVersion}` : 
-                    vrmMeta.specVersion !== undefined ? `VRM ${vrmMeta.specVersion}` : '不明';
+  // VRMバージョン表示
   html += `<div class="meta-info-field">
     <span class="meta-info-label">VRMバージョン:</span>
-    <span class="meta-info-value"><span class="meta-version-badge">${vrmVersion}</span></span>
+    <span class="meta-info-value"><span class="meta-version-badge">VRM ${vrmMeta.detectedVersion}</span></span>
   </div>`;
+
+  // バージョン固有の詳細情報
+  if (vrmMeta.isVRM0) {
+    // VRM0系の場合はversion情報も表示
+    if (vrmMeta.version) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">モデルバージョン:</span>
+        <span class="meta-info-value">${vrmMeta.version}</span>
+      </div>`;
+    }
+  }
 
   html += '</div>';
 
@@ -985,13 +994,34 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
   html += '<div class="meta-info-section">';
   html += '<h3>ライセンス情報</h3>';
 
-  // VRM1.0とVRM0.xでライセンス情報の構造が異なる
-  if (vrmMeta.licenseUrl) {
+  if (vrmMeta.isVRM1) {
     // VRM1.0形式
-    html += `<div class="meta-info-field">
-      <span class="meta-info-label">ライセンス:</span>
-      <span class="meta-info-value"><a href="${vrmMeta.licenseUrl}" target="_blank" rel="noopener">${vrmMeta.licenseUrl}</a></span>
-    </div>`;
+    if (vrmMeta.licenseUrl) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">ライセンス:</span>
+        <span class="meta-info-value"><a href="${vrmMeta.licenseUrl}" target="_blank" rel="noopener">${vrmMeta.licenseUrl}</a></span>
+      </div>`;
+    }
+
+    if (vrmMeta.commercialUsage) {
+      const commercialText = vrmMeta.commercialUsage === 'personalNonProfit' ? '個人・非営利のみ' : 
+                            vrmMeta.commercialUsage === 'personalProfit' ? '個人利用（営利含む）' : 
+                            vrmMeta.commercialUsage === 'corporation' ? '企業利用可' : vrmMeta.commercialUsage;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">商用利用:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${commercialText}</span></span>
+      </div>`;
+    }
+
+    if (vrmMeta.modification) {
+      const modificationText = vrmMeta.modification === 'prohibited' ? '禁止' : 
+                              vrmMeta.modification === 'allowModification' ? '改変許可' : 
+                              vrmMeta.modification === 'allowModificationRedistribution' ? '改変・再配布許可' : vrmMeta.modification;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">改変:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${modificationText}</span></span>
+      </div>`;
+    }
   } else {
     // VRM0.x形式のライセンス情報
     if (vrmMeta.commercialUssageName !== undefined) {
@@ -1015,25 +1045,44 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
       </div>`;
     }
 
+    if (vrmMeta.violentUssageName !== undefined) {
+      const violentText = vrmMeta.violentUssageName === 'Allow' ? '許可' : 
+                         vrmMeta.violentUssageName === 'Disallow' ? '禁止' : vrmMeta.violentUssageName;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">暴力表現:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${violentText}</span></span>
+      </div>`;
+    }
+
+    if (vrmMeta.sexualUssageName !== undefined) {
+      const sexualText = vrmMeta.sexualUssageName === 'Allow' ? '許可' : 
+                        vrmMeta.sexualUssageName === 'Disallow' ? '禁止' : vrmMeta.sexualUssageName;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">性的表現:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${sexualText}</span></span>
+      </div>`;
+    }
+
     if (vrmMeta.licenseName) {
       html += `<div class="meta-info-field">
         <span class="meta-info-label">ライセンス:</span>
         <span class="meta-info-value">${vrmMeta.licenseName}</span>
       </div>`;
     }
+  }
 
-    if (vrmMeta.otherLicenseUrl) {
-      html += `<div class="meta-info-field">
-        <span class="meta-info-label">ライセンス詳細:</span>
-        <span class="meta-info-value"><a href="${vrmMeta.otherLicenseUrl}" target="_blank" rel="noopener">${vrmMeta.otherLicenseUrl}</a></span>
-      </div>`;
-    }
+  // 共通のライセンス関連情報
+  if (vrmMeta.otherLicenseUrl) {
+    html += `<div class="meta-info-field">
+      <span class="meta-info-label">ライセンス詳細:</span>
+      <span class="meta-info-value"><a href="${vrmMeta.otherLicenseUrl}" target="_blank" rel="noopener">${vrmMeta.otherLicenseUrl}</a></span>
+    </div>`;
   }
 
   html += '</div>';
 
   // 連絡先・その他情報セクション
-  if (vrmMeta.contactInformation || vrmMeta.reference) {
+  if (vrmMeta.contactInformation || vrmMeta.reference || vrmMeta.references) {
     html += '<div class="meta-info-section">';
     html += '<h3>連絡先・その他</h3>';
 
@@ -1044,10 +1093,27 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
       </div>`;
     }
 
+    // VRM0系のreference
     if (vrmMeta.reference) {
       html += `<div class="meta-info-field">
         <span class="meta-info-label">参照:</span>
         <span class="meta-info-value">${vrmMeta.reference}</span>
+      </div>`;
+    }
+
+    // VRM1系のreferences
+    if (vrmMeta.references && vrmMeta.references.length > 0) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">参照:</span>
+        <span class="meta-info-value">${vrmMeta.references.join(', ')}</span>
+      </div>`;
+    }
+
+    // VRM1系のcopyright情報
+    if (vrmMeta.copyrightInformation) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">著作権情報:</span>
+        <span class="meta-info-value">${vrmMeta.copyrightInformation}</span>
       </div>`;
     }
 

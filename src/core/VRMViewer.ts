@@ -271,13 +271,16 @@ export class VRMViewer {
           throw new Error('有効なVRMデータが見つかりませんでした');
         }
 
+        // VRMバージョンを検知し、メタ情報を正規化
+        const normalizedMeta = this.normalizeVRMMetadata(vrm, vrmMeta);
+
         // VRMをシーンに追加
         this.currentVRM = vrm;
         this.vrmModels = [vrm]; // 単体読み込みの場合は配列をリセット
         this.vrmSourceData = [arrayBuffer.slice(0)]; // 元データを保存（複製用）
         
-        // VRMにメタ情報を追加（アクセス用）
-        (vrm as any).vrmMeta = vrmMeta;
+        // VRMに正規化されたメタ情報を追加（アクセス用）
+        (vrm as any).vrmMeta = normalizedMeta;
         
         this.scene.add(vrm.scene);
 
@@ -288,7 +291,8 @@ export class VRMViewer {
         this.adjustCameraToModel(vrm);
 
         console.log('VRMモデルが正常に読み込まれました');
-        console.log('VRMメタ情報:', vrmMeta);
+        console.log('VRMバージョン:', normalizedMeta.detectedVersion);
+        console.log('VRMメタ情報:', normalizedMeta);
 
       } finally {
         // BlobURLを解放
@@ -299,6 +303,126 @@ export class VRMViewer {
       console.error('VRM読み込みエラー:', error);
       throw new Error(`VRMの読み込みに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * VRMバージョンを検知し、メタ情報を正規化する
+   */
+  private normalizeVRMMetadata(vrm: VRM, vrmMeta: any): any {
+    // VRMのバージョンを検知
+    const detectedVersion = this.detectVRMVersion(vrm, vrmMeta);
+    
+    // 基本構造を準備
+    const normalized: any = {
+      detectedVersion: detectedVersion,
+      isVRM1: detectedVersion.startsWith('1.'),
+      isVRM0: detectedVersion.startsWith('0.'),
+      thumbnailImage: vrmMeta?.thumbnailImage || null
+    };
+
+    if (detectedVersion.startsWith('1.')) {
+      // VRM1系の場合
+      normalized.name = vrmMeta?.name || '';
+      normalized.authors = vrmMeta?.authors || [];
+      normalized.copyrightInformation = vrmMeta?.copyrightInformation || '';
+      normalized.contactInformation = vrmMeta?.contactInformation || '';
+      normalized.references = vrmMeta?.references || [];
+      normalized.thirdPartyLicenses = vrmMeta?.thirdPartyLicenses || '';
+      normalized.licenseUrl = vrmMeta?.licenseUrl || '';
+      normalized.avatarPermission = vrmMeta?.avatarPermission || {};
+      normalized.allowExcessivelyViolentUsage = vrmMeta?.allowExcessivelyViolentUsage || false;
+      normalized.allowExcessivelySexualUsage = vrmMeta?.allowExcessivelySexualUsage || false;
+      normalized.commercialUsage = vrmMeta?.commercialUsage || '';
+      normalized.allowPoliticalOrReligiousUsage = vrmMeta?.allowPoliticalOrReligiousUsage || false;
+      normalized.allowAntisocialOrHateUsage = vrmMeta?.allowAntisocialOrHateUsage || false;
+      normalized.creditNotation = vrmMeta?.creditNotation || '';
+      normalized.allowRedistribution = vrmMeta?.allowRedistribution || false;
+      normalized.modification = vrmMeta?.modification || '';
+      normalized.otherLicenseUrl = vrmMeta?.otherLicenseUrl || '';
+      normalized.metaVersion = vrmMeta?.metaVersion || '1.0';
+    } else {
+      // VRM0系の場合
+      normalized.name = vrmMeta?.title || ''; // titleがモデル名
+      normalized.authors = vrmMeta?.author ? [vrmMeta.author] : [];
+      normalized.contactInformation = vrmMeta?.contactInformation || '';
+      normalized.reference = vrmMeta?.reference || '';
+      normalized.version = vrmMeta?.version || '';
+      normalized.commercialUssageName = vrmMeta?.commercialUssageName || '';
+      normalized.allowedUserName = vrmMeta?.allowedUserName || '';
+      normalized.violentUssageName = vrmMeta?.violentUssageName || '';
+      normalized.sexualUssageName = vrmMeta?.sexualUssageName || '';
+      normalized.licenseName = vrmMeta?.licenseName || '';
+      normalized.otherLicenseUrl = vrmMeta?.otherLicenseUrl || '';
+      normalized.otherPermissionUrl = vrmMeta?.otherPermissionUrl || '';
+      normalized.specVersion = vrmMeta?.specVersion || '0.0';
+    }
+
+    return normalized;
+  }
+
+  /**
+   * VRMのバージョンを検知する
+   */
+  private detectVRMVersion(vrm: VRM, vrmMeta: any): string {
+    console.log('バージョン検知開始 - vrmMeta:', vrmMeta);
+    console.log('バージョン検知開始 - vrm.meta:', vrm.meta);
+
+    // VRM0.x系の特徴的なプロパティの存在をチェック（VRM1より先に）
+    if (vrmMeta?.title !== undefined || 
+        vrmMeta?.author !== undefined || 
+        vrmMeta?.commercialUssageName !== undefined ||
+        vrmMeta?.allowedUserName !== undefined ||
+        vrmMeta?.violentUssageName !== undefined ||
+        vrmMeta?.sexualUssageName !== undefined) {
+      
+      // VRM0.x系の場合、specVersionから取得
+      if (vrmMeta?.specVersion !== undefined) {
+        console.log('VRM0.x検知: specVersion =', vrmMeta.specVersion);
+        return vrmMeta.specVersion;
+      }
+      
+      console.log('VRM0.x検知: デフォルトで0.0');
+      return '0.0';
+    }
+
+    // VRM1.0のプロパティをチェック
+    if (vrmMeta?.metaVersion !== undefined) {
+      console.log('VRM1.x検知: metaVersion =', vrmMeta.metaVersion);
+      return `1.${vrmMeta.metaVersion}`;
+    }
+    
+    // VRM1.0の特徴的なプロパティの存在をチェック
+    if (vrmMeta?.authors || 
+        vrmMeta?.avatarPermission || 
+        vrmMeta?.commercialUsage !== undefined ||
+        vrmMeta?.allowExcessivelyViolentUsage !== undefined) {
+      console.log('VRM1.x検知: 特徴的プロパティから');
+      return '1.0';
+    }
+    
+    // VRMオブジェクトからバージョン情報を取得を試行
+    if (vrm.meta) {
+      // VRM0.x系の場合
+      if ((vrm.meta as any).specVersion !== undefined) {
+        console.log('VRM0.x検知: vrm.meta.specVersion =', (vrm.meta as any).specVersion);
+        return (vrm.meta as any).specVersion;
+      }
+      // VRM1.0の場合
+      if ((vrm.meta as any).metaVersion !== undefined) {
+        console.log('VRM1.x検知: vrm.meta.metaVersion =', (vrm.meta as any).metaVersion);
+        return `1.${(vrm.meta as any).metaVersion}`;
+      }
+    }
+    
+    // 最後の手段として、vrmMetaに何かしら情報があるかでVRM1/VRM0を判断
+    if (vrmMeta && Object.keys(vrmMeta).length > 0) {
+      console.log('不明なVRM - vrmMetaにデータあり - デフォルト1.0');
+      return '1.0';
+    }
+    
+    // デフォルトではVRM0.0として扱う
+    console.log('VRM検知失敗 - デフォルト0.0');
+    return '0.0';
   }
 
   /**
@@ -605,12 +729,15 @@ export class VRMViewer {
           throw new Error('有効なVRMデータが見つかりませんでした');
         }
 
+        // VRMバージョンを検知し、メタ情報を正規化
+        const normalizedMeta = this.normalizeVRMMetadata(vrm, vrmMeta);
+
         // VRMをリストに追加
         this.vrmModels.push(vrm);
         this.vrmSourceData.push(arrayBuffer.slice(0)); // 元データを保存（複製用）
         
-        // VRMにメタ情報を追加（アクセス用）
-        (vrm as any).vrmMeta = vrmMeta;
+        // VRMに正規化されたメタ情報を追加（アクセス用）
+        (vrm as any).vrmMeta = normalizedMeta;
         
         // 最初のVRMの場合は currentVRM に設定
         if (!this.currentVRM) {
@@ -634,7 +761,8 @@ export class VRMViewer {
         this.adjustCameraToAllModels();
 
         console.log(`VRMモデルが追加されました (総数: ${this.vrmModels.length})`);
-        console.log('VRMメタ情報:', vrmMeta);
+        console.log('VRMバージョン:', normalizedMeta.detectedVersion);
+        console.log('VRMメタ情報:', normalizedMeta);
 
       } finally {
         // BlobURLを解放
