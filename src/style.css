@@ -476,6 +476,77 @@ body {
   }
 }
 
+/* ドラッグ&ドロップ領域スタイル */
+.drop-zone {
+  border: 3px dashed #ccc;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  margin: 10px 0;
+}
+
+.drop-zone:hover {
+  border-color: #007bff;
+  background: #f0f8ff;
+}
+
+.drop-zone.dragover {
+  border-color: #007bff;
+  background: #e3f2fd;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.2);
+}
+
+.drop-zone-content {
+  pointer-events: none;
+}
+
+.drop-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.drop-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.drop-subtext {
+  font-size: 14px;
+  color: #666;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .drop-zone {
+    background: #2a2a2a;
+    border-color: #555;
+  }
+  
+  .drop-zone:hover {
+    border-color: #007bff;
+    background: #003d66;
+  }
+  
+  .drop-zone.dragover {
+    background: #1a365d;
+  }
+  
+  .drop-text {
+    color: #ffffff;
+  }
+  
+  .drop-subtext {
+    color: #ccc;
+  }
+}
+
 /* モデルリストスタイル */
 .model-item {
   padding: 8px;
@@ -846,6 +917,123 @@ h3 {
   margin-top: 5px;
 }
 
+/* メタ情報モーダルの左右レイアウト */
+.meta-info-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.meta-thumbnail-section {
+  flex-shrink: 0;
+  width: 160px;
+}
+
+.meta-thumbnail {
+  width: 100%;
+  max-width: 160px;
+  height: auto;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.meta-thumbnail-placeholder {
+  width: 160px;
+  height: 160px;
+  background: #f0f0f0;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+}
+
+.meta-info-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.meta-info-section {
+  margin-bottom: 20px;
+}
+
+.meta-info-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.1em;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 5px;
+}
+
+.meta-info-field {
+  margin: 8px 0;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.meta-info-field strong {
+  color: #555;
+  display: inline-block;
+  min-width: 100px;
+}
+
+.meta-info-field a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.meta-info-field a:hover {
+  text-decoration: underline;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 600px) {
+  .meta-info-layout {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .meta-thumbnail-section {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .meta-thumbnail {
+    max-width: 120px;
+  }
+  
+  .meta-thumbnail-placeholder {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .meta-thumbnail {
+    border-color: #555;
+  }
+  
+  .meta-thumbnail-placeholder {
+    background: #333;
+    border-color: #555;
+    color: #ccc;
+  }
+  
+  .meta-info-section h3 {
+    color: #ffffff;
+    border-bottom-color: #444;
+  }
+  
+  .meta-info-field strong {
+    color: #ccc;
+  }
+}
+
 /* 基本情報セクションの横並びレイアウト */
 .basic-info-container {
   display: flex;
@@ -992,4 +1180,428 @@ h3 {
   margin-bottom: 5px;
   font-size: 0.9em;
   color: #888;
+}
+
+/* リファクタリング版モーダルスタイル */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 10000; /* 最高の優先度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.modal .modal-content {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(1);
+  transition: transform 0.3s ease;
+  z-index: 10001; /* モーダルコンテンツも最優先 */
+}
+
+.modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+  color: #333;
+}
+
+.modal .close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px;
+  color: #888;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal .close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.modal .modal-body {
+  position: relative;
+  z-index: 10002;
+}
+
+.modal .load-options {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.modal .load-option {
+  padding: 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.modal .load-option:hover {
+  border-color: #007bff;
+  background: #f0f8ff;
+}
+
+.modal .load-option h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.modal .load-option .control-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 10003; /* ボタンは最最優先 */
+  pointer-events: auto; /* 明示的にポインターイベントを有効化 */
+}
+
+.modal .load-option .control-btn:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.modal .note {
+  margin: 10px 0 0 0;
+  font-size: 0.9em;
+  color: #666;
+  font-style: italic;
+}
+
+/* VRMモデル一覧カード型スタイル */
+.vrm-item {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 70px;
+}
+
+.vrm-item:hover {
+  border-color: #007bff;
+  background: #f0f8ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.vrm-item.selected {
+  border-color: #007bff;
+  background: #e3f2fd;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.vrm-item-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.vrm-thumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #ddd;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.vrm-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.vrm-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.vrm-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.vrm-author {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vrm-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.info-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: #6c757d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.info-btn:hover {
+  background: #5a6268;
+  transform: scale(1.05);
+}
+
+.info-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: white;
+}
+
+.delete-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: #dc3545;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 0;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
+
+/* 右下モーダル（選択中モデル設定） */
+.bottom-right-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 60vh;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow-y: auto;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.bottom-right-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.bottom-right-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.bottom-right-modal .close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 3px;
+  color: #666;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bottom-right-modal .close:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.bottom-right-modal .modal-body {
+  padding: 15px 20px;
+}
+
+.bottom-right-modal .modal-section {
+  border-top: 1px solid #e0e0e0;
+  margin-top: 15px;
+}
+
+.bottom-right-modal .modal-section .modal-header {
+  padding: 10px 0 5px;
+  border-bottom: 1px solid #e0e0e0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.bottom-right-modal .control-group {
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.bottom-right-modal .control-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: fit-content;
+}
+
+.bottom-right-modal .control-btn:hover {
+  background: #0056b3;
+}
+
+.bottom-right-modal .control-btn.danger-btn {
+  background: #dc3545;
+}
+
+.bottom-right-modal .control-btn.danger-btn:hover {
+  background: #c82333;
+}
+
+.bottom-right-modal label {
+  font-size: 0.9em;
+  color: #555;
+  min-width: fit-content;
+}
+
+.bottom-right-modal input[type="range"] {
+  flex: 1;
+  margin: 0 8px;
+}
+
+.bottom-right-modal input[type="radio"] {
+  margin-right: 5px;
+}
+
+.bottom-right-modal p {
+  margin: 5px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .bottom-right-modal {
+    background: #2a2a2a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+  
+  .bottom-right-modal .modal-header {
+    background: #333;
+    border-bottom-color: #444;
+  }
+  
+  .bottom-right-modal .modal-header h3 {
+    color: #ffffff;
+  }
+  
+  .bottom-right-modal .close {
+    color: #ccc;
+  }
+  
+  .bottom-right-modal .close:hover {
+    background: #444;
+    color: #ffffff;
+  }
+  
+  .bottom-right-modal .modal-section {
+    border-top-color: #444;
+  }
+  
+  .bottom-right-modal .modal-section .modal-header {
+    border-bottom-color: #444;
+  }
+  
+  .bottom-right-modal label {
+    color: #ccc;
+  }
+  
+  .bottom-right-modal p {
+    color: #ccc;
+  }
 }
