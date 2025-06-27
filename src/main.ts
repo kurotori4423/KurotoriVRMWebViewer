@@ -96,6 +96,9 @@ async function main() {
     // ファイル選択のイベントリスナーを設定
     setupFileInputHandlers(vrmViewer);
     
+    // キーボード操作のイベントリスナーを設定
+    setupKeyboardHandlers(vrmViewer);
+    
   } catch (error) {
     console.error('VRMビューワーの初期化に失敗しました:', error);
     showError('VRMビューワーの初期化に失敗しました');
@@ -253,6 +256,102 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   // 初期カウント更新
   updateVRMCount(vrmViewer, vrmCountSpan);
   updateModelList(vrmViewer);
+}
+
+/**
+ * キーボード操作のイベントハンドラを設定
+ */
+function setupKeyboardHandlers(vrmViewer: VRMViewer): void {
+  document.addEventListener('keydown', (event) => {
+    // 入力フィールドにフォーカスがある場合はキーボード操作を無効にする
+    const activeElement = document.activeElement;
+    if (activeElement && (
+      activeElement.tagName === 'INPUT' || 
+      activeElement.tagName === 'TEXTAREA' ||
+      (activeElement as HTMLElement).contentEditable === 'true'
+    )) {
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowUp':
+        event.preventDefault();
+        selectPreviousModel(vrmViewer);
+        break;
+      
+      case 'ArrowDown':
+        event.preventDefault();
+        selectNextModel(vrmViewer);
+        break;
+      
+      case 'Escape':
+        event.preventDefault();
+        clearModelSelection(vrmViewer);
+        break;
+    }
+  });
+}
+
+/**
+ * 前のモデルを選択
+ */
+function selectPreviousModel(vrmViewer: VRMViewer): void {
+  const modelCount = vrmViewer.getVRMCount();
+  if (modelCount === 0) return;
+
+  const currentIndex = vrmViewer.getSelectedModelIndex();
+  let newIndex: number;
+
+  if (currentIndex <= 0) {
+    // 現在選択されていないか最初のモデルの場合は最後のモデルを選択
+    newIndex = modelCount - 1;
+  } else {
+    // 前のモデルを選択
+    newIndex = currentIndex - 1;
+  }
+
+  selectModelInList(vrmViewer, newIndex);
+  console.log(`上矢印キー: モデル ${newIndex} を選択しました`);
+}
+
+/**
+ * 次のモデルを選択
+ */
+function selectNextModel(vrmViewer: VRMViewer): void {
+  const modelCount = vrmViewer.getVRMCount();
+  if (modelCount === 0) return;
+
+  const currentIndex = vrmViewer.getSelectedModelIndex();
+  let newIndex: number;
+
+  if (currentIndex < 0 || currentIndex >= modelCount - 1) {
+    // 現在選択されていないか最後のモデルの場合は最初のモデルを選択
+    newIndex = 0;
+  } else {
+    // 次のモデルを選択
+    newIndex = currentIndex + 1;
+  }
+
+  selectModelInList(vrmViewer, newIndex);
+  console.log(`下矢印キー: モデル ${newIndex} を選択しました`);
+}
+
+/**
+ * モデル選択をクリア
+ */
+function clearModelSelection(vrmViewer: VRMViewer): void {
+  vrmViewer.clearSelection();
+  
+  // UI上の選択状態もクリア
+  const allItems = document.querySelectorAll('.model-item');
+  allItems.forEach(item => {
+    item.classList.remove('selected');
+  });
+  
+  // 選択モデル操作コントロールを更新
+  updateSelectedModelControls(vrmViewer);
+  
+  console.log('Escキー: モデル選択をクリアしました');
 }
 
 /**
