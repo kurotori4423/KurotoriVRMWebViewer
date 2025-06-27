@@ -144,6 +144,20 @@ export class VRMManager extends BaseManager {
     if (vrm.meta?.metaVersion === '0') {
       vrm.scene.rotation.y = Math.PI;
     }
+
+    // 複数モデル読み込み時のX軸オフセット配置
+    const modelIndex = this.vrmModels.length; // 現在のモデル数（0-based index）
+    const offsetDistance = 2.5; // モデル間隔（単位）
+    
+    if (modelIndex > 0) {
+      // 2体目以降はX軸方向にオフセット
+      vrm.scene.position.x = modelIndex * offsetDistance;
+      console.log(`VRMモデル #${modelIndex} をX軸位置 ${vrm.scene.position.x} に配置しました`);
+    } else {
+      // 1体目は原点に配置
+      vrm.scene.position.set(0, 0, 0);
+      console.log('VRMモデル #0 を原点に配置しました');
+    }
   }
 
   /**

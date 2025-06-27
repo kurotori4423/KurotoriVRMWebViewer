@@ -202,10 +202,44 @@ export class SelectionManager extends BaseManager {
     // 既存のアウトラインを削除
     this.hideOutline();
 
-    // モデルのバウンディングボックスを計算
+    // VRMシーンの現在の位置と回転を保存
+    const originalPosition = vrm.scene.position.clone();
+    const originalRotation = vrm.scene.rotation.clone();
+    
+    // VRMバージョンを取得（文字列または数値の可能性があるため、適切に処理）
+    const vrmMetaVersion = vrm.meta?.metaVersion;
+    const isVRM0 = Number(vrmMetaVersion) === 0;
+    
+    // 一時的にシーン位置と回転を原点/無回転にリセットしてバウンディングボックスを計算
+    vrm.scene.position.set(0, 0, 0);
+    vrm.scene.rotation.set(0, 0, 0);
     const box = new THREE.Box3().setFromObject(vrm.scene);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
+    
+    // シーン位置と回転を元に戻す
+    vrm.scene.position.copy(originalPosition);
+    vrm.scene.rotation.copy(originalRotation);
+    
+    // VRMバージョンに応じてアウトライン位置を調整
+    let adjustedCenter = center.clone();
+    
+    if (isVRM0) {
+      // VRM0の場合: Z軸方向の符号を反転
+      adjustedCenter.z = -center.z;
+      console.log('VRM0: Z軸方向の符号を反転', `${center.z.toFixed(3)} → ${adjustedCenter.z.toFixed(3)}`);
+    } else {
+      // VRM1の場合: そのまま使用
+      console.log('VRM1: バウンディングボックス中心をそのまま使用');
+    }
+    
+    // デバッグ情報
+    console.log('=== Outline Debug Info ===');
+    console.log('VRM Position:', `(${originalPosition.x.toFixed(3)}, ${originalPosition.y.toFixed(3)}, ${originalPosition.z.toFixed(3)})`);
+    console.log('VRM Meta Version:', vrmMetaVersion);
+    console.log('BB Center (reset origin):', `(${center.x.toFixed(3)}, ${center.y.toFixed(3)}, ${center.z.toFixed(3)})`);
+    console.log('Adjusted Center:', `(${adjustedCenter.x.toFixed(3)}, ${adjustedCenter.y.toFixed(3)}, ${adjustedCenter.z.toFixed(3)})`);
+    console.log('BB Size:', `(${size.x.toFixed(3)}, ${size.y.toFixed(3)}, ${size.z.toFixed(3)})`);
 
     // アウトライン用のジオメトリを作成
     const outlineGeometry = new THREE.BoxGeometry(
@@ -224,7 +258,12 @@ export class SelectionManager extends BaseManager {
 
     // アウトラインメッシュを作成
     this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
-    this.outlineMesh.position.copy(center);
+    // 調整されたバウンディングボックス中心に、VRMシーンの位置を加算
+    this.outlineMesh.position.copy(adjustedCenter).add(originalPosition);
+    
+    console.log('Final Outline Position:', `(${this.outlineMesh.position.x.toFixed(3)}, ${this.outlineMesh.position.y.toFixed(3)}, ${this.outlineMesh.position.z.toFixed(3)})`);
+    console.log('=== End Debug Info ===');
+    
     this.scene.add(this.outlineMesh);
   }
 
