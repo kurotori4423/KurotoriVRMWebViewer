@@ -64,6 +64,11 @@ export class VRMBoneController {
     this.boneTransformControls.addEventListener('dragging-changed', (event) => {
       this.orbitControls.enabled = !event.value;
     });
+
+    // ボーン操作時のリアルタイム更新処理を追加
+    this.boneTransformControls.addEventListener('objectChange', () => {
+      this.updateBoneVisualizationAndVRM();
+    });
   }
 
   /**
@@ -489,6 +494,89 @@ export class VRMBoneController {
    */
   setOnBoneSelectionChanged(callback: ((boneName: string | null) => void) | null): void {
     this.onBoneSelectionChanged = callback;
+  }
+
+  /**
+   * ボーンの視覚化とVRMのリアルタイム更新
+   */
+  private updateBoneVisualizationAndVRM(): void {
+    if (!this.currentVRM) return;
+
+    // カスタムボーン線の位置を更新
+    this.updateCustomBoneLines();
+
+    // SkeletonHelperの更新
+    if (this.skeletonHelper) {
+      this.skeletonHelper.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // VRMの更新処理を実行（アニメーションループで実行されるため、ここでは不要）
+    // if (this.currentVRM.update) {
+    //   this.currentVRM.update(0);
+    // }
+
+    console.log('ボーンの視覚化を更新しました');
+  }
+
+  /**
+   * カスタムボーン線の位置を動的に更新
+   */
+  private updateCustomBoneLines(): void {
+    if (!this.customBoneLines || !this.currentVRM) return;
+
+    // VRMのスキンメッシュを取得
+    let skinnedMesh: THREE.SkinnedMesh | null = null;
+    this.currentVRM.scene.traverse((object) => {
+      if (object instanceof THREE.SkinnedMesh && !skinnedMesh) {
+        skinnedMesh = object as THREE.SkinnedMesh;
+      }
+    });
+
+    if (!skinnedMesh) return;
+    
+    const skinnedMeshTyped = skinnedMesh as THREE.SkinnedMesh;
+    if (!skinnedMeshTyped.skeleton) return;
+
+    const skeleton = skinnedMeshTyped.skeleton;
+    const bones = skeleton.bones;
+
+    // ボーン階層情報を解析
+    const boneConnections: [THREE.Bone, THREE.Bone][] = [];
+    
+    for (const bone of bones) {
+      // 各ボーンの子ボーンとの接続を追加
+      for (const child of bone.children) {
+        if (child instanceof THREE.Bone) {
+          boneConnections.push([bone, child as THREE.Bone]);
+        }
+      }
+    }
+
+    if (boneConnections.length === 0) return;
+
+    // 新しい位置データを作成
+    const positions: number[] = [];
+    
+    for (const [parentBone, childBone] of boneConnections) {
+      // 親ボーンの位置
+      const parentPos = new THREE.Vector3();
+      parentBone.getWorldPosition(parentPos);
+      
+      // 子ボーンの位置
+      const childPos = new THREE.Vector3();
+      childBone.getWorldPosition(childPos);
+      
+      // 線分の開始点と終了点を追加
+      positions.push(parentPos.x, parentPos.y, parentPos.z);
+      positions.push(childPos.x, childPos.y, childPos.z);
+    }
+
+    // BufferGeometryの位置属性を更新
+    const positionAttribute = this.customBoneLines.geometry.getAttribute('position') as THREE.BufferAttribute;
+    if (positionAttribute) {
+      positionAttribute.set(positions);
+      positionAttribute.needsUpdate = true;
+    }
   }
 
   /**

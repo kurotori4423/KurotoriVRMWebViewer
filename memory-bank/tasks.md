@@ -1,7 +1,64 @@
 # タスク管理
 
 ## 現在のタスク
-**現在、アクティブなタスクはありません**
+**FIX-002**: ボーン操作時の接続線とモデル変形問題の修正
+
+### 問題の詳細
+- **症状**: ボーン選択オブジェクト（TransformControls）は回転するが、黄色い線で表示されるボーンの接続を示す表示やモデル自体のボーンは変形しない
+- **発生条件**: VRMBoneControllerでボーンを選択し、TransformControlsで回転操作を行った場合
+- **タスク種別**: Level 1 (Quick Bug Fix)
+- **開始日**: 2024年12月28日
+
+### 調査結果（初期分析）
+- **VRMBoneController.ts**: TransformControlsは正常に初期化され、ボーンにアタッチされている
+- **問題箇所1**: `createCustomBoneLines`メソッドで作成される黄色い線は静的で、ボーン移動に追従しない
+- **問題箇所2**: ボーン操作時にVRMの更新処理が呼ばれていない可能性
+- **推測原因**: 
+  1. カスタムボーン線の位置更新処理が欠如
+  2. ボーン操作時のVRM更新フローが未実装
+  3. TransformControls操作時のリアルタイム更新システムがない
+
+### 修正予定項目
+- [x] TransformControls操作中のリアルタイム更新システム実装
+- [x] カスタムボーン線の動的位置更新機能追加
+- [x] VRM本体の更新処理の統合
+- [x] ボーン操作時のイベントリスナー実装
+
+### 実装詳細
+#### 修正1: TransformControls操作時のリアルタイム更新
+- **ファイル**: `src/core/VRMBoneController.ts`
+- **内容**: `initializeTransformControls()`メソッドに`objectChange`イベントリスナーを追加
+- **コード**: `this.boneTransformControls.addEventListener('objectChange', () => { this.updateBoneVisualizationAndVRM(); });`
+
+#### 修正2: ボーン視覚化の動的更新メソッド追加
+- **ファイル**: `src/core/VRMBoneController.ts`  
+- **追加メソッド**: `updateBoneVisualizationAndVRM()`, `updateCustomBoneLines()`
+- **機能**: TransformControls操作時にカスタムボーン線とSkeletonHelperの位置を動的更新
+
+#### 修正3: VRMアニメーションループの統合
+- **ファイル**: `src/core/VRMViewerRefactored.ts`
+- **内容**: `startRenderLoop()`メソッドに`updateVRMModels()`を追加
+- **機能**: 毎フレームVRM.update()を呼び出してモデルの変形を反映
+
+### 修正後の動作予想
+1. **ボーン選択オブジェクト（TransformControls）の回転** → ✅ 既存機能が正常動作
+2. **黄色い線（カスタムボーン線）の追従** → ✅ リアルタイム位置更新で解決
+3. **SkeletonHelperの更新** → ✅ geometry.attributes.position.needsUpdateで解決
+4. **モデル自体のボーン変形** → ✅ アニメーションループでVRM.update()実行により解決
+
+### テスト予定項目
+- [ ] ボーン選択後のTransformControls操作確認
+- [ ] 黄色い線の動的追従確認
+- [ ] モデルの変形・アニメーション確認
+- [ ] 複数VRMモデルでの動作確認
+
+### 技術詳細
+- **対象ファイル**: `src/core/VRMBoneController.ts`
+- **関連メソッド**: `initializeTransformControls()`, `createCustomBoneLines()`, `selectBoneByRaycast()`
+- **必要な追加機能**: 
+  - TransformControls 'objectChange' イベントハンドラー
+  - ボーン線の動的更新機能
+  - VRM更新フロー統合
 
 ## 次回実行予定タスク
 **現在、予定されているタスクはありません**

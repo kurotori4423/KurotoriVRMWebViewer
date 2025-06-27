@@ -223,6 +223,9 @@ export class VRMViewerRefactored {
       // マネージャーの更新
       this.lightController.update();
       
+      // VRMモデルの更新処理
+      this.updateVRMModels();
+      
       // レンダリング
       this.renderer.render(this.scene, this.camera);
       
@@ -231,6 +234,20 @@ export class VRMViewerRefactored {
     };
     
     animate();
+  }
+
+  /**
+   * すべてのVRMモデルの更新処理
+   */
+  private updateVRMModels(): void {
+    const vrmModels = this.vrmManager.getVRMModels();
+    const deltaTime = 0.016; // 約60FPS想定 (1/60)
+    
+    for (const vrm of vrmModels) {
+      if (vrm.update) {
+        vrm.update(deltaTime);
+      }
+    }
   }
 
   /**
