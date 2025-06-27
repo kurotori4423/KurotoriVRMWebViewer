@@ -720,7 +720,7 @@ function updateModelList(vrmViewer: VRMViewer): void {
         </div>
         <div class="model-actions">
           <button class="info-btn" data-index="${index}" title="メタ情報を表示" aria-label="モデル${index + 1}のメタ情報を表示">
-            <span class="info-icon">ⓘ</span>
+            <img src="/assets/icons/info.svg" alt="Info" class="info-icon-svg" />
           </button>
         </div>
       </div>
@@ -731,7 +731,7 @@ function updateModelList(vrmViewer: VRMViewer): void {
       const target = e.target as HTMLElement;
       // Infoボタンまたはその子要素がクリックされた場合は選択せずにメタ情報を表示
       if (target.classList.contains('info-btn') || 
-          target.classList.contains('info-icon') || 
+          target.classList.contains('info-icon-svg') || 
           target.closest('.info-btn')) {
         e.stopPropagation();
         showMetaInfoModal(vrmViewer, index);

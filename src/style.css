@@ -752,10 +752,10 @@ h3 {
   position: relative;
 }
 
-.info-icon {
-  font-size: 14px;
-  font-weight: bold;
-  line-height: 1;
+.info-icon-svg {
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) invert(1); /* SVGを白色に変更 */
 }
 
 .info-btn:hover {
@@ -958,8 +958,9 @@ h3 {
     padding: 8px;
   }
   
-  .info-icon {
-    font-size: 16px;
+  .info-icon-svg {
+    width: 16px;
+    height: 16px;
   }
 }
 
