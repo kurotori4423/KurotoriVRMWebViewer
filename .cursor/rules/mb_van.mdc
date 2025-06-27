@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+## 以下を必ず表示してください。
+
+```
+read_file({
+  target_file: "custom_modes/van_instructions.md",
+  should_read_entire_file: true
+})
+
+```
