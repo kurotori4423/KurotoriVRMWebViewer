@@ -229,6 +229,112 @@ body {
   font-size: 14px;
 }
 
+/* モデル操作コントロールのスタイル */
+#model-controls, #multi-vrm-controls {
+  margin: 20px 0;
+}
+
+#model-controls h3, #multi-vrm-controls h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  #model-controls h3, #multi-vrm-controls h3 {
+    color: #ffffff;
+  }
+}
+
+.control-group {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 6px 12px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.add-btn {
+  padding: 6px 12px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+.danger-btn {
+  padding: 6px 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.danger-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+/* スライダーのスタイル */
+#model-scale {
+  flex: 1;
+  min-width: 100px;
+}
+
+#scale-value {
+  min-width: 30px;
+  font-weight: 500;
+  color: #646cff;
+}
+
+#vrm-count {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  #vrm-count {
+    color: #ccc;
+  }
+}
+
+/* UIコンテナのサイズ調整 */
+#ui-container {
+  min-width: 320px;
+  max-width: 400px;
+}
+
 /* ユーティリティクラス */
 .hidden {
   display: none !important;

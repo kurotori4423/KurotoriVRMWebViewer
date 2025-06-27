@@ -18,6 +18,7 @@ export class VRMViewer {
   // VRM関連
   private gltfLoader: GLTFLoader;
   private currentVRM: VRM | null = null;
+  private vrmModels: VRM[] = []; // 複数VRM管理用
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -233,6 +234,7 @@ export class VRMViewer {
 
         // VRMをシーンに追加
         this.currentVRM = vrm;
+        this.vrmModels = [vrm]; // 単体読み込みの場合は配列をリセット
         this.scene.add(vrm.scene);
 
         // VRMの向きと位置を調整
@@ -274,6 +276,12 @@ export class VRMViewer {
         }
       });
       
+      // 配列からも削除
+      const index = this.vrmModels.indexOf(this.currentVRM);
+      if (index !== -1) {
+        this.vrmModels.splice(index, 1);
+      }
+      
       this.currentVRM = null;
     }
   }
@@ -304,5 +312,272 @@ export class VRMViewer {
    */
   getCurrentVRM(): VRM | null {
     return this.currentVRM;
+  }
+
+  /**
+   * モデルを中央に配置
+   */
+  centerModel(): void {
+    if (!this.currentVRM) {
+      console.warn('VRMモデルが読み込まれていません');
+      return;
+    }
+
+    // モデルのバウンディングボックスを計算
+    const box = new THREE.Box3().setFromObject(this.currentVRM.scene);
+    const center = box.getCenter(new THREE.Vector3());
+
+    // モデルを原点に移動
+    this.currentVRM.scene.position.copy(center.negate());
+    
+    console.log('モデルを中央に配置しました');
+  }
+
+  /**
+   * モデルのスケールを調整
+   */
+  setModelScale(scale: number): void {
+    if (!this.currentVRM) {
+      console.warn('VRMモデルが読み込まれていません');
+      return;
+    }
+
+    this.currentVRM.scene.scale.setScalar(scale);
+    console.log(`モデルのスケールを ${scale} に設定しました`);
+  }
+
+  /**
+   * モデルの位置を設定
+   */
+  setModelPosition(x: number, y: number, z: number): void {
+    if (!this.currentVRM) {
+      console.warn('VRMモデルが読み込まれていません');
+      return;
+    }
+
+    this.currentVRM.scene.position.set(x, y, z);
+    console.log(`モデルの位置を (${x}, ${y}, ${z}) に設定しました`);
+  }
+
+  /**
+   * モデルの回転を設定
+   */
+  setModelRotation(x: number, y: number, z: number): void {
+    if (!this.currentVRM) {
+      console.warn('VRMモデルが読み込まれていません');
+      return;
+    }
+
+    this.currentVRM.scene.rotation.set(x, y, z);
+    console.log(`モデルの回転を (${x}, ${y}, ${z}) に設定しました`);
+  }
+
+  /**
+   * カメラ位置をリセット
+   */
+  resetCamera(): void {
+    if (this.currentVRM) {
+      this.adjustCameraToModel(this.currentVRM);
+    } else {
+      // デフォルト位置
+      this.camera.position.set(0, 1.5, 3);
+      this.camera.lookAt(0, 1, 0);
+      this.controls.target.set(0, 1, 0);
+      this.controls.update();
+    }
+    console.log('カメラ位置をリセットしました');
+  }
+
+  /**
+   * VRMを追加読み込み（複数体表示）
+   */
+  async addVRMFromFile(file: File): Promise<void> {
+    const arrayBuffer = await file.arrayBuffer();
+    await this.addVRMFromArrayBuffer(arrayBuffer);
+  }
+
+  /**
+   * URLからVRMを追加読み込み
+   */
+  async addVRMFromURL(url: string): Promise<void> {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`VRMファイルの取得に失敗しました: ${response.status} ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    await this.addVRMFromArrayBuffer(arrayBuffer);
+  }
+
+  /**
+   * ArrayBufferからVRMを追加読み込み
+   */
+  private async addVRMFromArrayBuffer(arrayBuffer: ArrayBuffer): Promise<void> {
+    try {
+      // ArrayBufferをBlobURLに変換してロード
+      const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      
+      try {
+        const gltf = await this.gltfLoader.loadAsync(url);
+        const vrm = gltf.userData.vrm as VRM;
+
+        if (!vrm) {
+          throw new Error('有効なVRMデータが見つかりませんでした');
+        }
+
+        // VRMをリストに追加
+        this.vrmModels.push(vrm);
+        
+        // 最初のVRMの場合は currentVRM に設定
+        if (!this.currentVRM) {
+          this.currentVRM = vrm;
+        }
+
+        // VRMをシーンに追加
+        this.scene.add(vrm.scene);
+
+        // VRMの向きと位置を調整
+        VRMUtils.rotateVRM0(vrm);
+        
+        // 複数体の場合は少しずらして配置
+        if (this.vrmModels.length > 1) {
+          const spacing = 2.0;
+          const index = this.vrmModels.length - 1;
+          vrm.scene.position.x = index * spacing - (this.vrmModels.length - 1) * spacing * 0.5;
+        }
+
+        // カメラ位置を調整（全体が見えるように）
+        this.adjustCameraToAllModels();
+
+        console.log(`VRMモデルが追加されました (総数: ${this.vrmModels.length})`);
+        console.log('VRMメタ情報:', vrm.meta);
+
+      } finally {
+        // BlobURLを解放
+        URL.revokeObjectURL(url);
+      }
+
+    } catch (error) {
+      console.error('VRM読み込みエラー:', error);
+      throw new Error(`VRMの読み込みに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * 全てのVRMモデルを削除
+   */
+  removeAllVRMs(): void {
+    this.vrmModels.forEach((vrm) => {
+      this.scene.remove(vrm.scene);
+      // リソースクリーンアップ
+      vrm.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((material) => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+    });
+    
+    this.vrmModels = [];
+    this.currentVRM = null;
+    console.log('全てのVRMモデルを削除しました');
+  }
+
+  /**
+   * 指定されたインデックスのVRMモデルを削除
+   */
+  removeVRMAtIndex(index: number): void {
+    if (index < 0 || index >= this.vrmModels.length) {
+      console.warn('無効なインデックスです');
+      return;
+    }
+
+    const vrm = this.vrmModels[index];
+    this.scene.remove(vrm.scene);
+    
+    // リソースクリーンアップ
+    vrm.scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.geometry.dispose();
+        if (Array.isArray(object.material)) {
+          object.material.forEach((material) => material.dispose());
+        } else {
+          object.material.dispose();
+        }
+      }
+    });
+
+    // 配列から削除
+    this.vrmModels.splice(index, 1);
+    
+    // currentVRMが削除された場合は次のものを設定
+    if (vrm === this.currentVRM) {
+      this.currentVRM = this.vrmModels.length > 0 ? this.vrmModels[0] : null;
+    }
+
+    // 残りのモデルを再配置
+    this.repositionAllModels();
+    
+    console.log(`VRMモデル ${index} を削除しました (残り: ${this.vrmModels.length})`);
+  }
+
+  /**
+   * 全モデルを再配置
+   */
+  private repositionAllModels(): void {
+    const spacing = 2.0;
+    this.vrmModels.forEach((vrm, index) => {
+      vrm.scene.position.x = index * spacing - (this.vrmModels.length - 1) * spacing * 0.5;
+    });
+    this.adjustCameraToAllModels();
+  }
+
+  /**
+   * 全モデルが見えるようにカメラを調整
+   */
+  private adjustCameraToAllModels(): void {
+    if (this.vrmModels.length === 0) {
+      this.resetCamera();
+      return;
+    }
+
+    // 全モデルのバウンディングボックスを計算
+    const overallBox = new THREE.Box3();
+    this.vrmModels.forEach((vrm) => {
+      const box = new THREE.Box3().setFromObject(vrm.scene);
+      overallBox.union(box);
+    });
+
+    const size = overallBox.getSize(new THREE.Vector3());
+    const center = overallBox.getCenter(new THREE.Vector3());
+
+    // 全体が見えるカメラ距離を計算
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = this.camera.fov * (Math.PI / 180);
+    const distance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.2;
+
+    // カメラとコントロールの位置を調整
+    this.camera.position.set(center.x + distance * 0.5, center.y + distance * 0.3, center.z + distance);
+    this.camera.lookAt(center);
+    this.controls.target.copy(center);
+    this.controls.update();
+  }
+
+  /**
+   * VRMモデルのリストを取得
+   */
+  getVRMModels(): VRM[] {
+    return [...this.vrmModels];
+  }
+
+  /**
+   * VRMモデルの数を取得
+   */
+  getVRMCount(): number {
+    return this.vrmModels.length;
   }
 }
