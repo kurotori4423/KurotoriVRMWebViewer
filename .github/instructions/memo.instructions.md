@@ -291,3 +291,63 @@ VRM0.xとVRM1.0でメタ情報の構造が異なるため、条件分岐で適�
 - 各ステップ完了時にコミットを実行する際は、コマンドを分割
 - `git add .` → `git commit -m "..."`の順序で実行
 - コミットメッセージは詳細かつ明確に記述
+
+## フェーズ3: VRMメタ情報表示機能完了メモ (2024/12/28)
+
+### ✅ VRM0/VRM1バージョン検知・メタ情報対応完了
+
+#### 重要な実装成果
+**VRM0系とVRM1系のメタ情報構造の違いに完全対応**
+
+1. **VRMバージョン検知ロジック強化**
+   - VRM0系の特徴的プロパティ（title, author, commercialUssageName, allowedUserName等）を優先的にチェック
+   - VRM1系の特徴的プロパティ（metaVersion, authors, commercialUsage等）との明確な区別
+   - VRM0系が誤ってVRM1として検知される問題を解決
+
+2. **メタ情報正規化処理実装**
+   - VRM0系: `title → name`, `author → authors配列`変換
+   - VRM1系: 既存の`name`, `authors配列`をそのまま使用
+   - 両形式を統一されたインターフェースで扱う正規化層追加
+
+3. **UI表示分岐実装**
+   - VRM0系: 詳細なライセンス情報（商用利用、利用許可、暴力・性的表現、ライセンス名等）
+   - VRM1系: 新形式のライセンス情報（ライセンスURL、商用利用、改変許可等）
+   - 両形式でサムネイル画像表示対応
+
+#### 技術的詳細
+
+**VRMバージョン検知アルゴリズム改善**:
+```typescript
+// VRM0.x系の特徴的プロパティを優先チェック
+if (vrmMeta?.title !== undefined || 
+    vrmMeta?.author !== undefined || 
+    vrmMeta?.commercialUssageName !== undefined) {
+  // VRM0として処理
+}
+// VRM1.x系のプロパティチェック
+else if (vrmMeta?.metaVersion !== undefined ||
+         vrmMeta?.authors || vrmMeta?.commercialUsage !== undefined) {
+  // VRM1として処理
+}
+```
+
+**メタ情報正規化処理**:
+- VRM0: `{title, author, version, commercialUssageName, allowedUserName, violentUssageName, sexualUssageName, licenseName}`
+- VRM1: `{name, authors[], metaVersion, commercialUsage, modification, licenseUrl}`
+- 統一: `{name, authors[], detectedVersion, isVRM0, isVRM1, thumbnailImage, ...}`
+
+#### Playwrightテスト結果
+- ✅ VRM0サンプル: 正しく「VRM 0.0」として検知・表示
+- ✅ VRM1サンプル: 正しく「VRM 1.1」として検知・表示
+- ✅ VRM0系メタ情報: タイトル、作者、詳細ライセンス情報、バージョン情報表示
+- ✅ VRM1系メタ情報: 名前、作者配列、ライセンスURL、商用利用・改変許可、サムネイル表示
+- ✅ 両バージョン共存: 複数モデル読み込み時の個別バージョン判定
+
+#### 重要な設計判断
+1. **VRM0優先検知**: VRM0系プロパティを先にチェックし、VRM1との誤認識を防止
+2. **正規化レイヤー**: 両形式を統一インターフェースで扱うことで、UI層での分岐を最小化
+3. **デバッグログ強化**: バージョン検知プロセスの可視化でトラブルシューティングを支援
+
+#### 今後の拡張対応
+- 新しいVRMバージョンへの対応は`detectVRMVersion`と`normalizeVRMMetadata`の修正のみで可能
+- UI表示は正規化されたメタ情報を使用するため、表示ロジックの変更は最小限
