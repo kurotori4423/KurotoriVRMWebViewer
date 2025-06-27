@@ -45,7 +45,10 @@ export class VRMViewer {
     // GLTFローダーの初期化とVRMプラグインの設定
     this.gltfLoader = new GLTFLoader();
     this.gltfLoader.register((parser) => {
-      return new VRMLoaderPlugin(parser);
+      // サムネイル画像を読み込むためのプラグイン設定
+      const plugin = new VRMLoaderPlugin(parser);
+      plugin.metaPlugin.needThumbnailImage = true;
+      return plugin;
     });
   }
 
@@ -262,6 +265,7 @@ export class VRMViewer {
       try {
         const gltf = await this.gltfLoader.loadAsync(url);
         const vrm = gltf.userData.vrm as VRM;
+        const vrmMeta = gltf.userData.vrmMeta; // メタ情報を正しく取得
 
         if (!vrm) {
           throw new Error('有効なVRMデータが見つかりませんでした');
@@ -271,6 +275,10 @@ export class VRMViewer {
         this.currentVRM = vrm;
         this.vrmModels = [vrm]; // 単体読み込みの場合は配列をリセット
         this.vrmSourceData = [arrayBuffer.slice(0)]; // 元データを保存（複製用）
+        
+        // VRMにメタ情報を追加（アクセス用）
+        (vrm as any).vrmMeta = vrmMeta;
+        
         this.scene.add(vrm.scene);
 
         // VRMの向きと位置を調整
@@ -280,7 +288,7 @@ export class VRMViewer {
         this.adjustCameraToModel(vrm);
 
         console.log('VRMモデルが正常に読み込まれました');
-        console.log('VRMメタ情報:', vrm.meta);
+        console.log('VRMメタ情報:', vrmMeta);
 
       } finally {
         // BlobURLを解放
@@ -591,6 +599,7 @@ export class VRMViewer {
       try {
         const gltf = await this.gltfLoader.loadAsync(url);
         const vrm = gltf.userData.vrm as VRM;
+        const vrmMeta = gltf.userData.vrmMeta; // メタ情報を正しく取得
 
         if (!vrm) {
           throw new Error('有効なVRMデータが見つかりませんでした');
@@ -599,6 +608,9 @@ export class VRMViewer {
         // VRMをリストに追加
         this.vrmModels.push(vrm);
         this.vrmSourceData.push(arrayBuffer.slice(0)); // 元データを保存（複製用）
+        
+        // VRMにメタ情報を追加（アクセス用）
+        (vrm as any).vrmMeta = vrmMeta;
         
         // 最初のVRMの場合は currentVRM に設定
         if (!this.currentVRM) {
@@ -622,7 +634,7 @@ export class VRMViewer {
         this.adjustCameraToAllModels();
 
         console.log(`VRMモデルが追加されました (総数: ${this.vrmModels.length})`);
-        console.log('VRMメタ情報:', vrm.meta);
+        console.log('VRMメタ情報:', vrmMeta);
 
       } finally {
         // BlobURLを解放

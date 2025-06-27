@@ -16,3 +16,4 @@ applyTo: '**'
 
 - 開発環境はWindowsのVisual Studio Codeです。ターミナルコマンドはWindowsのコマンドプロンプトやPowerShellで実行可能なものを使用してください。
 - 修正依頼が来た場合はTodo.mdに修正内容を追加し、次の実装に反映させてください。
+- 開発する上で重要だと思うことや個人的なメモは".github/instructions/memo.instructions.md"に自分で追記してください。

@@ -10,133 +10,171 @@ async function main() {
   app.innerHTML = `
     <div id="vrm-viewer-container">
       <canvas id="vrm-canvas"></canvas>
-      <div id="ui-container">
+      
+      <!-- 左サイドバー（シンプル化） -->
+      <div id="left-sidebar">
         <h1>KurotoriVRM WebViewer</h1>
-        <div id="file-input-container">
-          <input type="file" id="vrm-file-input" accept=".vrm" />
-          <label for="vrm-file-input">VRMファイルを選択</label>
-          
-          <div id="preset-buttons">
-            <h3>プリセット</h3>
-            <button id="load-vrm0-sample" class="preset-btn">VRM0サンプル</button>
-            <button id="load-vrm1-sample" class="preset-btn">VRM1サンプル</button>
-          </div>
-          
-          <div id="model-controls">
-            <h3>モデル操作</h3>
-            <div class="control-group">
-              <button id="center-model" class="control-btn">中央配置</button>
-            </div>
-            <div class="control-group">
-              <button id="reset-camera" class="control-btn">カメラリセット</button>
-              <button id="reset-camera-default" class="control-btn">デフォルト位置</button>
-            </div>
-            <div class="control-group">
-              <button id="reset-camera-fit-all" class="control-btn">全体表示</button>
-              <button id="reset-camera-animated" class="control-btn">アニメーション</button>
-            </div>
-            <div class="control-group">
-              <label for="model-scale">スケール:</label>
-              <input type="range" id="model-scale" min="0.1" max="3.0" step="0.1" value="1.0" />
-              <span id="scale-value">1.0</span>
+        
+        <!-- VRMファイル読み込み（シンプル化） -->
+        <div id="load-section">
+          <button id="open-load-modal" class="primary-btn">VRMファイル読み込み</button>
+          <span id="vrm-count">VRM数: 0</span>
+        </div>
+        
+        <!-- 読み込み済みモデル一覧 -->
+        <div id="vrm-list-container">
+          <h3>読み込み済みモデル</h3>
+          <div id="vrm-list">
+            <div id="no-models-message" class="no-models">
+              モデルが読み込まれていません
             </div>
           </div>
-          
-          <div id="multi-vrm-controls">
-            <h3>複数体管理</h3>
-            <div class="control-group">
-              <button id="add-vrm0-sample" class="add-btn">VRM0追加</button>
-              <button id="add-vrm1-sample" class="add-btn">VRM1追加</button>
-            </div>
-            <div class="control-group">
-              <button id="clear-all-vrms" class="danger-btn">全て削除</button>
-              <span id="vrm-count">VRM数: 0</span>
-            </div>
+        </div>
+        
+        <!-- カメラ操作 -->
+        <div id="camera-controls">
+          <h3>カメラ操作</h3>
+          <div class="control-group">
+            <button id="reset-camera-default" class="control-btn">デフォルト位置</button>
+            <button id="reset-camera-fit-all" class="control-btn">全体表示</button>
           </div>
-          
-          <div id="lighting-controls">
-            <h3>ライト調整</h3>
-            <div class="control-group">
-              <label for="ambient-light">環境光:</label>
-              <input type="range" id="ambient-light" min="0.0" max="2.0" step="0.1" value="0.3" />
-              <span id="ambient-value">0.3</span>
-            </div>
-            <div class="control-group">
-              <label for="directional-light">方向性ライト:</label>
-              <input type="range" id="directional-light" min="0.0" max="3.0" step="0.1" value="1.0" />
-              <span id="directional-value">1.0</span>
-            </div>
-            <div class="control-group">
-              <label for="rim-light">リムライト:</label>
-              <input type="range" id="rim-light" min="0.0" max="2.0" step="0.1" value="0.5" />
-              <span id="rim-value">0.5</span>
-            </div>
-            <div class="control-group">
-              <button id="reset-lights" class="control-btn">ライトリセット</button>
-            </div>
+          <div class="control-group">
+            <button id="reset-camera-animated" class="control-btn">アニメーション</button>
           </div>
-          
-          <div id="background-controls">
-            <h3>背景設定</h3>
-            <div class="control-group">
-              <label for="background-color">背景色:</label>
-              <input type="color" id="background-color" value="#2a2a2a" />
-              <button id="transparent-background" class="control-btn">透明</button>
-            </div>
-            <div class="control-group">
-              <h4>プリセット背景</h4>
-              <button class="preset-color-btn" data-color="#ffffff">白</button>
-              <button class="preset-color-btn" data-color="#000000">黒</button>
-              <button class="preset-color-btn" data-color="#2a2a2a">グレー</button>
-              <button class="preset-color-btn" data-color="#1e3a8a">青</button>
-              <button class="preset-color-btn" data-color="#166534">緑</button>
-            </div>
-            <div class="control-group">
-              <h4>グラデーション背景</h4>
-              <label for="gradient-top">上部:</label>
-              <input type="color" id="gradient-top" value="#87ceeb" />
-              <label for="gradient-bottom">下部:</label>
-              <input type="color" id="gradient-bottom" value="#ffffff" />
-              <button id="apply-gradient" class="control-btn">適用</button>
-            </div>
-            <div class="control-group">
-              <button id="reset-background" class="control-btn">背景リセット</button>
-            </div>
+        </div>
+        
+        <!-- ライト設定 -->
+        <div id="lighting-controls">
+          <h3>ライト調整</h3>
+          <div class="control-group">
+            <label for="ambient-light">環境光:</label>
+            <input type="range" id="ambient-light" min="0.0" max="2.0" step="0.1" value="0.3" />
+            <span id="ambient-value">0.3</span>
           </div>
-          
-          <div id="vrm-list-container">
-            <h3>読み込み済みモデル</h3>
-            <div id="vrm-list">
-              <div id="no-models-message" class="no-models">
-                モデルが読み込まれていません
+          <div class="control-group">
+            <label for="directional-light">方向性ライト:</label>
+            <input type="range" id="directional-light" min="0.0" max="3.0" step="0.1" value="1.0" />
+            <span id="directional-value">1.0</span>
+          </div>
+          <div class="control-group">
+            <button id="reset-lights" class="control-btn">ライトリセット</button>
+          </div>
+        </div>
+        
+        <!-- 背景設定 -->
+        <div id="background-controls">
+          <h3>背景設定</h3>
+          <div class="control-group">
+            <label for="background-color">背景色:</label>
+            <input type="color" id="background-color" value="#2a2a2a" />
+          </div>
+          <div class="control-group">
+            <button class="preset-color-btn" data-color="#ffffff">白</button>
+            <button class="preset-color-btn" data-color="#000000">黒</button>
+            <button class="preset-color-btn" data-color="#2a2a2a">グレー</button>
+          </div>
+          <div class="control-group">
+            <button id="reset-background" class="control-btn">背景リセット</button>
+          </div>
+        </div>
+        
+        <!-- 全て削除ボタン -->
+        <div id="danger-zone">
+          <button id="clear-all-vrms" class="danger-btn">全モデル削除</button>
+        </div>
+      </div>
+      
+      <!-- VRMファイル読み込みモーダル -->
+      <div id="load-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>VRMファイル読み込み</h2>
+            <button id="close-modal" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <!-- ファイル選択 -->
+            <div class="load-section">
+              <input type="file" id="vrm-file-input" accept=".vrm" />
+              <label for="vrm-file-input" class="file-input-label">ファイルを選択</label>
+            </div>
+            
+            <!-- ドラッグ&ドロップ領域 -->
+            <div id="drag-drop-zone">
+              ここにVRMファイルをドラッグ&ドロップ
+            </div>
+            
+            <!-- サンプル追加ボタン -->
+            <div class="sample-section">
+              <h3>サンプルモデル</h3>
+              <div class="sample-buttons">
+                <button id="load-vrm0-sample" class="sample-btn">VRM0サンプル</button>
+                <button id="load-vrm1-sample" class="sample-btn">VRM1サンプル</button>
+                <button id="add-vrm0-sample" class="sample-btn">VRM0追加</button>
+                <button id="add-vrm1-sample" class="sample-btn">VRM1追加</button>
               </div>
             </div>
           </div>
-          
-          <div id="selected-model-controls">
-            <h3>選択モデル操作</h3>
-            <div id="selected-model-info" class="hidden">
-              <span id="selected-model-name">未選択</span>
-            </div>
-            <div class="control-group">
-              <button id="focus-selected" class="control-btn" disabled>フォーカス</button>
-              <button id="toggle-visibility" class="control-btn" disabled>表示切替</button>
-            </div>
-            <div class="control-group">
-              <button id="duplicate-selected" class="control-btn" disabled>複製</button>
-              <button id="delete-selected" class="danger-btn" disabled>削除</button>
-            </div>
+        </div>
+      </div>
+      
+      <!-- 選択モデル詳細ウィンドウ -->
+      <div id="model-detail-window" class="detail-window hidden">
+        <div class="detail-header">
+          <h3>選択モデル操作</h3>
+          <button id="close-detail" class="close-btn">&times;</button>
+        </div>
+        <div class="detail-body">
+          <div id="selected-model-info">
+            <span id="selected-model-name">未選択</span>
           </div>
           
-          <div id="drag-drop-zone">
-            ここにVRMファイルをドラッグ&ドロップ
+          <!-- スケール調整 -->
+          <div class="control-group">
+            <label for="model-scale">スケール:</label>
+            <input type="range" id="model-scale" min="0.1" max="3.0" step="0.1" value="1.0" />
+            <span id="scale-value">1.0</span>
           </div>
           
-          <div id="loading-indicator" class="hidden">
-            読み込み中...
+          <!-- 操作ボタン -->
+          <div class="control-group">
+            <button id="focus-selected" class="control-btn" disabled>フォーカス</button>
+            <button id="toggle-visibility" class="control-btn" disabled>表示切替</button>
           </div>
-          
-          <div id="error-message" class="hidden error"></div>
+          <div class="control-group">
+            <button id="center-model" class="control-btn" disabled>中央配置</button>
+            <button id="duplicate-selected" class="control-btn" disabled>複製</button>
+          </div>
+          <div class="control-group">
+            <button id="delete-selected" class="danger-btn" disabled>削除</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ローディング・エラー表示 -->
+      <div id="loading-indicator" class="loading-overlay hidden">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">読み込み中...</div>
+        </div>
+      </div>
+      
+      <!-- VRMメタ情報モーダル -->
+      <div id="meta-info-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>VRMメタ情報</h2>
+            <button id="close-meta-modal" class="close-btn">×</button>
+          </div>
+          <div id="meta-info-content" class="meta-info-content">
+            <!-- メタ情報がここに動的に挿入される -->
+          </div>
+        </div>
+      </div>
+      
+      <div id="error-message" class="error-overlay hidden">
+        <div class="error-content">
+          <div class="error-text"></div>
+          <button id="close-error" class="control-btn">閉じる</button>
         </div>
       </div>
     </div>
@@ -166,23 +204,34 @@ async function main() {
  * ファイル入力関連のイベントハンドラを設定
  */
 function setupFileInputHandlers(vrmViewer: VRMViewer): void {
+  // モーダル関連の要素
+  const openModalBtn = document.getElementById('open-load-modal') as HTMLButtonElement;
+  const closeModalBtn = document.getElementById('close-modal') as HTMLButtonElement;
+  const loadModal = document.getElementById('load-modal') as HTMLDivElement;
+  
+  // ファイル入力要素
   const fileInput = document.getElementById('vrm-file-input') as HTMLInputElement;
+  const dragDropZone = document.getElementById('drag-drop-zone') as HTMLDivElement;
+  
+  // サンプルボタン
   const vrm0Button = document.getElementById('load-vrm0-sample') as HTMLButtonElement;
   const vrm1Button = document.getElementById('load-vrm1-sample') as HTMLButtonElement;
-  const dragDropZone = document.getElementById('drag-drop-zone') as HTMLDivElement;
+  const addVrm0Btn = document.getElementById('add-vrm0-sample') as HTMLButtonElement;
+  const addVrm1Btn = document.getElementById('add-vrm1-sample') as HTMLButtonElement;
 
-  // モデル操作コントロール
-  const centerModelBtn = document.getElementById('center-model') as HTMLButtonElement;
-  const resetCameraBtn = document.getElementById('reset-camera') as HTMLButtonElement;
+  // カメラ操作コントロール
   const resetCameraDefaultBtn = document.getElementById('reset-camera-default') as HTMLButtonElement;
   const resetCameraFitAllBtn = document.getElementById('reset-camera-fit-all') as HTMLButtonElement;
   const resetCameraAnimatedBtn = document.getElementById('reset-camera-animated') as HTMLButtonElement;
+
+  // 詳細ウィンドウ関連
+  const modelDetailWindow = document.getElementById('model-detail-window') as HTMLDivElement;
+  const closeDetailBtn = document.getElementById('close-detail') as HTMLButtonElement;
   const modelScaleSlider = document.getElementById('model-scale') as HTMLInputElement;
   const scaleValueSpan = document.getElementById('scale-value') as HTMLSpanElement;
+  const centerModelBtn = document.getElementById('center-model') as HTMLButtonElement;
 
   // 複数VRM管理コントロール
-  const addVrm0Btn = document.getElementById('add-vrm0-sample') as HTMLButtonElement;
-  const addVrm1Btn = document.getElementById('add-vrm1-sample') as HTMLButtonElement;
   const clearAllBtn = document.getElementById('clear-all-vrms') as HTMLButtonElement;
   const vrmCountSpan = document.getElementById('vrm-count') as HTMLSpanElement;
 
@@ -192,13 +241,68 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
   const duplicateSelectedBtn = document.getElementById('duplicate-selected') as HTMLButtonElement;
   const deleteSelectedBtn = document.getElementById('delete-selected') as HTMLButtonElement;
 
+  // メタ情報モーダル関連の要素
+  const metaInfoModal = document.getElementById('meta-info-modal') as HTMLDivElement;
+  const closeMetaModalBtn = document.getElementById('close-meta-modal') as HTMLButtonElement;
+
+  // モーダルの開閉
+  openModalBtn.addEventListener('click', () => {
+    loadModal.classList.remove('hidden');
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    loadModal.classList.add('hidden');
+  });
+
+  // モーダル外クリックで閉じる
+  loadModal.addEventListener('click', (e) => {
+    if (e.target === loadModal) {
+      loadModal.classList.add('hidden');
+    }
+  });
+
+  // ESCキーでモーダルを閉じる
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!loadModal.classList.contains('hidden')) {
+        loadModal.classList.add('hidden');
+      }
+      if (!modelDetailWindow.classList.contains('hidden')) {
+        modelDetailWindow.classList.add('hidden');
+      }
+      if (!metaInfoModal.classList.contains('hidden')) {
+        hideMetaInfoModal();
+      }
+    }
+  });
+
+  // メタ情報モーダルの開閉
+  closeMetaModalBtn.addEventListener('click', () => {
+    hideMetaInfoModal();
+  });
+
+  // メタ情報モーダル外クリックで閉じる
+  metaInfoModal.addEventListener('click', (e) => {
+    if (e.target === metaInfoModal) {
+      hideMetaInfoModal();
+    }
+  });
+
+  // 詳細ウィンドウの閉じる
+  closeDetailBtn.addEventListener('click', () => {
+    modelDetailWindow.classList.add('hidden');
+  });
+
   // ファイル選択
   fileInput.addEventListener('change', async (event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
+      loadModal.classList.add('hidden');
       await loadVRMFile(vrmViewer, file);
       updateVRMCount(vrmViewer, vrmCountSpan);
       updateModelList(vrmViewer);
+      // ファイル入力をリセット
+      fileInput.value = '';
     }
   });
 
@@ -211,20 +315,28 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
 
   // プリセットボタン - VRM1
   vrm1Button.addEventListener('click', async () => {
+    loadModal.classList.add('hidden');
     await loadVRMFromURL(vrmViewer, '/samples/sample_vrm1.vrm');
     updateVRMCount(vrmViewer, vrmCountSpan);
     updateModelList(vrmViewer);
   });
 
-  // モデル操作
-  centerModelBtn.addEventListener('click', () => {
-    vrmViewer.centerModel();
+  // 複数VRM管理
+  addVrm0Btn.addEventListener('click', async () => {
+    loadModal.classList.add('hidden');
+    await addVRMFromURL(vrmViewer, '/samples/sample_vrm0.vrm');
+    updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
-  resetCameraBtn.addEventListener('click', () => {
-    vrmViewer.resetCamera();
+  addVrm1Btn.addEventListener('click', async () => {
+    loadModal.classList.add('hidden');
+    await addVRMFromURL(vrmViewer, '/samples/sample_vrm1.vrm');
+    updateVRMCount(vrmViewer, vrmCountSpan);
+    updateModelList(vrmViewer);
   });
 
+  // カメラ操作
   resetCameraDefaultBtn.addEventListener('click', () => {
     vrmViewer.resetCameraToDefault();
   });
@@ -237,33 +349,54 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
     await vrmViewer.resetCameraAnimated(1500); // 1.5秒のアニメーション
   });
 
+  // 選択モデル操作（詳細ウィンドウ内）
+  centerModelBtn.addEventListener('click', () => {
+    vrmViewer.centerModel();
+  });
+
   modelScaleSlider.addEventListener('input', (event) => {
     const scale = parseFloat((event.target as HTMLInputElement).value);
     scaleValueSpan.textContent = scale.toFixed(1);
     vrmViewer.setModelScale(scale);
   });
 
-  // 複数VRM管理
-  addVrm0Btn.addEventListener('click', async () => {
-    await addVRMFromURL(vrmViewer, '/samples/sample_vrm0.vrm');
-    updateVRMCount(vrmViewer, vrmCountSpan);
-    updateModelList(vrmViewer);
+  // 選択モデル操作のイベントハンドラー（メイン）
+  focusSelectedBtn.addEventListener('click', () => {
+    vrmViewer.focusOnSelectedModel();
   });
 
-  addVrm1Btn.addEventListener('click', async () => {
-    await addVRMFromURL(vrmViewer, '/samples/sample_vrm1.vrm');
-    updateVRMCount(vrmViewer, vrmCountSpan);
-    updateModelList(vrmViewer);
+  toggleVisibilityBtn.addEventListener('click', () => {
+    vrmViewer.toggleSelectedModelVisibility();
+    updateSelectedModelControls(vrmViewer);
   });
 
+  duplicateSelectedBtn.addEventListener('click', async () => {
+    const success = await vrmViewer.duplicateSelectedModel();
+    if (success) {
+      updateVRMCount(vrmViewer, vrmCountSpan);
+      updateModelList(vrmViewer);
+    } else {
+      showError('モデルの複製に失敗しました');
+    }
+  });
+
+  deleteSelectedBtn.addEventListener('click', () => {
+    if (confirm('選択したモデルを削除しますか？')) {
+      vrmViewer.deleteSelectedModel();
+      updateVRMCount(vrmViewer, vrmCountSpan);
+      updateModelList(vrmViewer);
+      updateSelectedModelControls(vrmViewer);
+    }
+  });
+
+  // 全て削除
   clearAllBtn.addEventListener('click', () => {
     if (confirm('全てのVRMモデルを削除しますか？')) {
       vrmViewer.removeAllVRMs();
       updateVRMCount(vrmViewer, vrmCountSpan);
       updateModelList(vrmViewer);
-      // スケールスライダーをリセット
-      modelScaleSlider.value = '1.0';
-      scaleValueSpan.textContent = '1.0';
+      updateSelectedModelControls(vrmViewer);
+      modelDetailWindow.classList.add('hidden');
     }
   });
 
@@ -294,37 +427,6 @@ function setupFileInputHandlers(vrmViewer: VRMViewer): void {
     }
   });
 
-  // モデル選択関連のイベントリスナー
-  focusSelectedBtn.addEventListener('click', () => {
-    vrmViewer.focusOnSelectedModel();
-  });
-
-  toggleVisibilityBtn.addEventListener('click', () => {
-    const isVisible = vrmViewer.toggleSelectedModelVisibility();
-    toggleVisibilityBtn.textContent = isVisible ? '非表示' : '表示';
-  });
-
-  duplicateSelectedBtn.addEventListener('click', async () => {
-    const success = await vrmViewer.duplicateSelectedModel();
-    if (success) {
-      updateVRMCount(vrmViewer, vrmCountSpan);
-      updateModelList(vrmViewer);
-    } else {
-      showError('モデルの複製に失敗しました');
-    }
-  });
-
-  deleteSelectedBtn.addEventListener('click', () => {
-    if (confirm('選択されたモデルを削除しますか？')) {
-      const success = vrmViewer.deleteSelectedModel();
-      if (success) {
-        updateVRMCount(vrmViewer, vrmCountSpan);
-        updateModelList(vrmViewer);
-        updateSelectedModelControls(vrmViewer);
-      }
-    }
-  });
-
   // 初期カウント更新
   updateVRMCount(vrmViewer, vrmCountSpan);
   updateModelList(vrmViewer);
@@ -344,46 +446,45 @@ function setupLightingHandlers(vrmViewer: VRMViewer): void {
   const ambientLightSlider = document.getElementById('ambient-light') as HTMLInputElement;
   const ambientValue = document.getElementById('ambient-value') as HTMLSpanElement;
   
-  ambientLightSlider.addEventListener('input', (event) => {
-    const intensity = parseFloat((event.target as HTMLInputElement).value);
-    vrmViewer.setAmbientLightIntensity(intensity);
-    ambientValue.textContent = intensity.toFixed(1);
-  });
+  if (ambientLightSlider && ambientValue) {
+    ambientLightSlider.addEventListener('input', (event) => {
+      const intensity = parseFloat((event.target as HTMLInputElement).value);
+      vrmViewer.setAmbientLightIntensity(intensity);
+      ambientValue.textContent = intensity.toFixed(1);
+    });
+  }
 
   // 方向性ライト調整
   const directionalLightSlider = document.getElementById('directional-light') as HTMLInputElement;
   const directionalValue = document.getElementById('directional-value') as HTMLSpanElement;
   
-  directionalLightSlider.addEventListener('input', (event) => {
-    const intensity = parseFloat((event.target as HTMLInputElement).value);
-    vrmViewer.setDirectionalLightIntensity(intensity);
-    directionalValue.textContent = intensity.toFixed(1);
-  });
-
-  // リムライト調整
-  const rimLightSlider = document.getElementById('rim-light') as HTMLInputElement;
-  const rimValue = document.getElementById('rim-value') as HTMLSpanElement;
-  
-  rimLightSlider.addEventListener('input', (event) => {
-    const intensity = parseFloat((event.target as HTMLInputElement).value);
-    vrmViewer.setRimLightIntensity(intensity);
-    rimValue.textContent = intensity.toFixed(1);
-  });
+  if (directionalLightSlider && directionalValue) {
+    directionalLightSlider.addEventListener('input', (event) => {
+      const intensity = parseFloat((event.target as HTMLInputElement).value);
+      vrmViewer.setDirectionalLightIntensity(intensity);
+      directionalValue.textContent = intensity.toFixed(1);
+    });
+  }
 
   // ライトリセットボタン
   const resetLightsBtn = document.getElementById('reset-lights') as HTMLButtonElement;
-  resetLightsBtn.addEventListener('click', () => {
-    vrmViewer.resetLights();
-    
-    // UIも初期値にリセット
-    ambientLightSlider.value = '0.3';
-    ambientValue.textContent = '0.3';
-    directionalLightSlider.value = '1.0';
-    directionalValue.textContent = '1.0';
-    rimLightSlider.value = '0.5';
-    rimValue.textContent = '0.5';
-  });
+  if (resetLightsBtn) {
+    resetLightsBtn.addEventListener('click', () => {
+      vrmViewer.resetLights();
+      // スライダーの値もリセット
+      if (ambientLightSlider && ambientValue) {
+        ambientLightSlider.value = '0.3';
+        ambientValue.textContent = '0.3';
+      }
+      if (directionalLightSlider && directionalValue) {
+        directionalLightSlider.value = '1.0';
+        directionalValue.textContent = '1.0';
+      }
+    });
+  }
 }
+
+
 
 /**
  * キーボード操作のイベントハンドラを設定
@@ -477,6 +578,12 @@ function clearModelSelection(vrmViewer: VRMViewer): void {
   
   // 選択モデル操作コントロールを更新
   updateSelectedModelControls(vrmViewer);
+  
+  // 詳細ウィンドウを非表示
+  const modelDetailWindow = document.getElementById('model-detail-window') as HTMLDivElement;
+  if (modelDetailWindow) {
+    modelDetailWindow.classList.add('hidden');
+  }
   
   console.log('Escキー: モデル選択をクリアしました');
 }
@@ -591,8 +698,9 @@ function updateModelList(vrmViewer: VRMViewer): void {
     
     // モデル名を取得（メタ情報があれば使用、なければファイル名など）
     let modelName = `Model ${index + 1}`;
-    if (vrm.meta && vrm.meta.name) {
-      modelName = vrm.meta.name;
+    const vrmMeta = vrm.vrmMeta; // 修正: vrmMetaから取得
+    if (vrmMeta && vrmMeta.name) {
+      modelName = vrmMeta.name;
     }
     
     modelItem.innerHTML = `
@@ -600,11 +708,20 @@ function updateModelList(vrmViewer: VRMViewer): void {
         <div class="model-name">${modelName}</div>
         <div class="model-index">Index: ${index}</div>
       </div>
+      <div class="model-actions">
+        <button class="info-btn" data-index="${index}" title="メタ情報を表示">Info</button>
+      </div>
     `;
     
     // クリックイベントを追加
-    modelItem.addEventListener('click', () => {
-      selectModelInList(vrmViewer, index);
+    modelItem.addEventListener('click', (e) => {
+      // Infoボタンがクリックされた場合は選択せずにメタ情報を表示
+      if ((e.target as HTMLElement).classList.contains('info-btn')) {
+        e.stopPropagation();
+        showMetaInfoModal(vrmViewer, index);
+      } else {
+        selectModelInList(vrmViewer, index);
+      }
     });
     
     vrmListContainer.appendChild(modelItem);
@@ -630,6 +747,12 @@ function selectModelInList(vrmViewer: VRMViewer, index: number): void {
   
   // 選択モデル操作コントロールを更新
   updateSelectedModelControls(vrmViewer);
+  
+  // 詳細ウィンドウを表示
+  const modelDetailWindow = document.getElementById('model-detail-window') as HTMLDivElement;
+  if (modelDetailWindow) {
+    modelDetailWindow.classList.remove('hidden');
+  }
 }
 
 /**
@@ -644,6 +767,7 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
   const toggleBtn = document.getElementById('toggle-visibility') as HTMLButtonElement;
   const duplicateBtn = document.getElementById('duplicate-selected') as HTMLButtonElement;
   const deleteBtn = document.getElementById('delete-selected') as HTMLButtonElement;
+  const centerBtn = document.getElementById('center-model') as HTMLButtonElement;
   const selectedInfoDiv = document.getElementById('selected-model-info');
   const selectedNameSpan = document.getElementById('selected-model-name') as HTMLSpanElement;
   
@@ -657,13 +781,15 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
     toggleBtn.disabled = false;
     duplicateBtn.disabled = false;
     deleteBtn.disabled = false;
+    if (centerBtn) centerBtn.disabled = false;
     
     selectedInfoDiv?.classList.remove('hidden');
     
-    // モデル名の表示
+    // モデル名の表示（updateModelListと同じロジックを使用）
     let modelName = `Model ${selectedIndex + 1}`;
-    if (selectedModel.meta && selectedModel.meta.name) {
-      modelName = selectedModel.meta.name;
+    const vrmMeta = (selectedModel as any).vrmMeta; // 修正: vrmMetaから取得
+    if (vrmMeta && vrmMeta.name) {
+      modelName = vrmMeta.name;
     }
     selectedNameSpan.textContent = modelName;
     
@@ -682,6 +808,8 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
     duplicateBtn.disabled = true;
     deleteBtn.disabled = true;
     
+    if (centerBtn) centerBtn.disabled = true;
+    
     selectedInfoDiv?.classList.add('hidden');
     
     // モデルが選択されていない場合はスライダーをデフォルト値にリセット
@@ -689,6 +817,12 @@ function updateSelectedModelControls(vrmViewer: VRMViewer): void {
     scaleValueSpan.textContent = '1.0';
     selectedNameSpan.textContent = '未選択';
     toggleBtn.textContent = '表示切替';
+    
+    // 詳細ウィンドウを非表示
+    const modelDetailWindow = document.getElementById('model-detail-window') as HTMLDivElement;
+    if (modelDetailWindow) {
+      modelDetailWindow.classList.add('hidden');
+    }
   }
 }
 
@@ -719,9 +853,24 @@ function showLoading(show: boolean): void {
  */
 function showError(message: string): void {
   const errorElement = document.getElementById('error-message');
-  if (errorElement) {
-    errorElement.textContent = message;
+  const errorText = errorElement?.querySelector('.error-text') as HTMLDivElement;
+  
+  if (errorElement && errorText) {
+    errorText.textContent = message;
     errorElement.classList.remove('hidden');
+    
+    // エラー閉じるボタンのイベントリスナーを設定
+    const closeErrorBtn = document.getElementById('close-error') as HTMLButtonElement;
+    if (closeErrorBtn) {
+      closeErrorBtn.onclick = () => {
+        errorElement.classList.add('hidden');
+      };
+    }
+    
+    // 5秒後に自動で非表示
+    setTimeout(() => {
+      errorElement.classList.add('hidden');
+    }, 5000);
   }
 }
 
@@ -741,16 +890,12 @@ function hideError(): void {
 function setupBackgroundHandlers(vrmViewer: VRMViewer): void {
   // 背景色カラーピッカー
   const backgroundColorPicker = document.getElementById('background-color') as HTMLInputElement;
-  backgroundColorPicker.addEventListener('input', (event) => {
-    const color = (event.target as HTMLInputElement).value;
-    vrmViewer.setBackgroundColor(color);
-  });
-
-  // 透明背景ボタン
-  const transparentBackgroundBtn = document.getElementById('transparent-background') as HTMLButtonElement;
-  transparentBackgroundBtn.addEventListener('click', () => {
-    vrmViewer.setBackgroundTransparent();
-  });
+  if (backgroundColorPicker) {
+    backgroundColorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value;
+      vrmViewer.setBackgroundColor(color);
+    });
+  }
 
   // プリセット背景色ボタン
   const presetColorButtons = document.querySelectorAll('.preset-color-btn');
@@ -758,27 +903,178 @@ function setupBackgroundHandlers(vrmViewer: VRMViewer): void {
     button.addEventListener('click', () => {
       const color = (button as HTMLElement).dataset.color!;
       vrmViewer.setBackgroundColor(color);
-      backgroundColorPicker.value = color;
+      if (backgroundColorPicker) {
+        backgroundColorPicker.value = color;
+      }
     });
-  });
-
-  // グラデーション背景
-  const gradientTopPicker = document.getElementById('gradient-top') as HTMLInputElement;
-  const gradientBottomPicker = document.getElementById('gradient-bottom') as HTMLInputElement;
-  const applyGradientBtn = document.getElementById('apply-gradient') as HTMLButtonElement;
-
-  applyGradientBtn.addEventListener('click', () => {
-    const topColor = gradientTopPicker.value;
-    const bottomColor = gradientBottomPicker.value;
-    vrmViewer.setBackgroundGradient(topColor, bottomColor);
   });
 
   // 背景リセットボタン
   const resetBackgroundBtn = document.getElementById('reset-background') as HTMLButtonElement;
-  resetBackgroundBtn.addEventListener('click', () => {
-    vrmViewer.resetBackground();
-    backgroundColorPicker.value = '#2a2a2a';
-  });
+  if (resetBackgroundBtn) {
+    resetBackgroundBtn.addEventListener('click', () => {
+      vrmViewer.resetBackground();
+      if (backgroundColorPicker) {
+        backgroundColorPicker.value = '#2a2a2a';
+      }
+    });
+  }
+}
+
+/**
+ * VRMメタ情報モーダルを表示
+ */
+function showMetaInfoModal(vrmViewer: VRMViewer, index: number): void {
+  const models = vrmViewer.getVRMModels();
+  if (index < 0 || index >= models.length) return;
+
+  const vrm = models[index];
+  const modal = document.getElementById('meta-info-modal') as HTMLDivElement;
+  const content = document.getElementById('meta-info-content') as HTMLDivElement;
+
+  if (!modal || !content) return;
+
+  // メタ情報の内容を生成
+  content.innerHTML = generateMetaInfoHTML(vrm, index);
+
+  // モーダルを表示
+  modal.classList.remove('hidden');
+}
+
+/**
+ * VRMメタ情報のHTMLを生成
+ */
+function generateMetaInfoHTML(vrm: any, index: number): string {
+  const vrmMeta = vrm.vrmMeta; // 修正: vrmMetaから取得
+  if (!vrmMeta) {
+    return '<div class="meta-info-section"><p>メタ情報が利用できません。</p></div>';
+  }
+
+  let html = '';
+
+  // 基本情報セクション
+  html += '<div class="meta-info-section">';
+  html += '<h3>基本情報</h3>';
+  
+  // モデル名
+  const modelName = vrmMeta.name || `Model ${index + 1}`;
+  html += `<div class="meta-info-field">
+    <span class="meta-info-label">モデル名:</span>
+    <span class="meta-info-value">${modelName}</span>
+  </div>`;
+
+  // 作者
+  if (vrmMeta.authors && vrmMeta.authors.length > 0) {
+    html += `<div class="meta-info-field">
+      <span class="meta-info-label">作者:</span>
+      <span class="meta-info-value">${vrmMeta.authors.join(', ')}</span>
+    </div>`;
+  }
+
+  // バージョン情報（VRM1.0の場合は metaVersion、VRM0.xの場合は specVersion）
+  const vrmVersion = vrmMeta.metaVersion !== undefined ? `VRM ${vrmMeta.metaVersion}` : 
+                    vrmMeta.specVersion !== undefined ? `VRM ${vrmMeta.specVersion}` : '不明';
+  html += `<div class="meta-info-field">
+    <span class="meta-info-label">VRMバージョン:</span>
+    <span class="meta-info-value"><span class="meta-version-badge">${vrmVersion}</span></span>
+  </div>`;
+
+  html += '</div>';
+
+  // ライセンス情報セクション
+  html += '<div class="meta-info-section">';
+  html += '<h3>ライセンス情報</h3>';
+
+  // VRM1.0とVRM0.xでライセンス情報の構造が異なる
+  if (vrmMeta.licenseUrl) {
+    // VRM1.0形式
+    html += `<div class="meta-info-field">
+      <span class="meta-info-label">ライセンス:</span>
+      <span class="meta-info-value"><a href="${vrmMeta.licenseUrl}" target="_blank" rel="noopener">${vrmMeta.licenseUrl}</a></span>
+    </div>`;
+  } else {
+    // VRM0.x形式のライセンス情報
+    if (vrmMeta.commercialUssageName !== undefined) {
+      const commercial = vrmMeta.commercialUssageName;
+      const commercialText = commercial === 'Allow' ? '許可' : commercial === 'Disallow' ? '禁止' : commercial;
+      const commercialClass = commercial === 'Allow' ? 'allowed' : 'disallowed';
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">商用利用:</span>
+        <span class="meta-info-value"><span class="meta-license-badge ${commercialClass}">${commercialText}</span></span>
+      </div>`;
+    }
+
+    if (vrmMeta.allowedUserName !== undefined) {
+      const allowedUser = vrmMeta.allowedUserName;
+      const allowedUserText = allowedUser === 'OnlyAuthor' ? '作者のみ' : 
+                             allowedUser === 'ExplicitlyLicensedPerson' ? 'ライセンス対象者のみ' : 
+                             allowedUser === 'Everyone' ? '全員' : allowedUser;
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">利用許可:</span>
+        <span class="meta-info-value"><span class="meta-license-badge">${allowedUserText}</span></span>
+      </div>`;
+    }
+
+    if (vrmMeta.licenseName) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">ライセンス:</span>
+        <span class="meta-info-value">${vrmMeta.licenseName}</span>
+      </div>`;
+    }
+
+    if (vrmMeta.otherLicenseUrl) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">ライセンス詳細:</span>
+        <span class="meta-info-value"><a href="${vrmMeta.otherLicenseUrl}" target="_blank" rel="noopener">${vrmMeta.otherLicenseUrl}</a></span>
+      </div>`;
+    }
+  }
+
+  html += '</div>';
+
+  // 連絡先・その他情報セクション
+  if (vrmMeta.contactInformation || vrmMeta.reference) {
+    html += '<div class="meta-info-section">';
+    html += '<h3>連絡先・その他</h3>';
+
+    if (vrmMeta.contactInformation) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">連絡先:</span>
+        <span class="meta-info-value">${vrmMeta.contactInformation}</span>
+      </div>`;
+    }
+
+    if (vrmMeta.reference) {
+      html += `<div class="meta-info-field">
+        <span class="meta-info-label">参照:</span>
+        <span class="meta-info-value">${vrmMeta.reference}</span>
+      </div>`;
+    }
+
+    html += '</div>';
+  }
+
+  // サムネイル画像
+  if (vrmMeta.thumbnailImage) {
+    html += '<div class="meta-info-section">';
+    html += '<h3>サムネイル</h3>';
+    html += `<div class="meta-info-field">
+      <img src="${vrmMeta.thumbnailImage.src}" alt="サムネイル" class="meta-thumbnail" />
+    </div>`;
+    html += '</div>';
+  }
+
+  return html;
+}
+
+/**
+ * メタ情報モーダルを閉じる
+ */
+function hideMetaInfoModal(): void {
+  const modal = document.getElementById('meta-info-modal') as HTMLDivElement;
+  if (modal) {
+    modal.classList.add('hidden');
+  }
 }
 
 // アプリケーションを開始
