@@ -703,13 +703,24 @@ function updateModelList(vrmViewer: VRMViewer): void {
       modelName = vrmMeta.name;
     }
     
+    // サムネイル画像の取得
+    let thumbnailSrc = '';
+    if (vrmMeta && vrmMeta.thumbnailImage) {
+      thumbnailSrc = vrmMeta.thumbnailImage;
+    }
+    
     modelItem.innerHTML = `
-      <div class="model-info">
-        <div class="model-name">${modelName}</div>
-        <div class="model-index">Index: ${index}</div>
-      </div>
-      <div class="model-actions">
-        <button class="info-btn" data-index="${index}" title="メタ情報を表示">Info</button>
+      <div class="model-item-container">
+        <div class="model-thumbnail">
+          ${thumbnailSrc ? `<img src="${thumbnailSrc}" alt="サムネイル" class="model-thumbnail-img" />` : '<div class="model-thumbnail-placeholder"></div>'}
+        </div>
+        <div class="model-info">
+          <div class="model-name">${modelName}</div>
+          <div class="model-index">Index: ${index}</div>
+        </div>
+        <div class="model-actions">
+          <button class="info-btn" data-index="${index}" title="メタ情報を表示">Info</button>
+        </div>
       </div>
     `;
     
@@ -1130,16 +1141,6 @@ function generateMetaInfoHTML(vrm: any, index: number): string {
       </div>`;
     }
 
-    html += '</div>';
-  }
-
-  // サムネイル画像
-  if (vrmMeta.thumbnailImage) {
-    html += '<div class="meta-info-section">';
-    html += '<h3>サムネイル</h3>';
-    html += `<div class="meta-info-field">
-      <img src="${vrmMeta.thumbnailImage}" alt="サムネイル" class="meta-thumbnail" />
-    </div>`;
     html += '</div>';
   }
 

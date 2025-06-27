@@ -472,17 +472,68 @@ body {
 
 /* モデルリストスタイル */
 .model-item {
-  padding: 12px;
+  padding: 8px;
   margin: 8px 0;
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.model-item-container {
   display: flex;
   align-items: center;
   gap: 10px;
-  justify-content: space-between;
+}
+
+.model-thumbnail {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.model-thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
+              linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .model-thumbnail {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .model-thumbnail-placeholder {
+    background: linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555),
+                linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555);
+    background-size: 8px 8px;
+    background-position: 0 0, 4px 4px;
+  }
+}
+
+.model-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-actions {
+  flex-shrink: 0;
 }
 
 .model-item:hover {
@@ -518,19 +569,22 @@ body {
   flex: 1;
 }
 
-.model-item-name {
+.model-name {
   font-weight: 500;
   font-size: 14px;
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.model-item-index {
+.model-index {
   font-size: 12px;
   color: #666;
 }
 
 @media (prefers-color-scheme: dark) {
-  .model-item-index {
+  .model-index {
     color: #ccc;
   }
 }
@@ -680,18 +734,6 @@ h3 {
   #vrm-count {
     color: #ccc;
   }
-}
-
-/* モデル項目のアクション */
-.model-item {
-  justify-content: space-between;
-  align-items: center;
-}
-
-.model-actions {
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
 }
 
 .info-btn {
