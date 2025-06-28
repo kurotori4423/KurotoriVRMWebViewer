@@ -3,6 +3,7 @@ import { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { eventBus } from '../utils/EventBus';
+import { BonePointsManager } from './BonePointsManager';
 
 /**
  * VRMBoneController
@@ -17,8 +18,8 @@ export class VRMBoneController {
   // VRM関連
   private currentVRM: VRM | null = null;
   
-  // ボーン操作用
-  private customBoneLines: THREE.LineSegments | null = null;
+  // ボーン操作用（BonePointsManagerに統合）
+  private bonePointsManager: BonePointsManager;
   private bonePoints: THREE.Mesh[] = [];
   private bonePointsVisible: boolean = true;
   private selectedBone: THREE.Bone | null = null;
@@ -48,6 +49,11 @@ export class VRMBoneController {
     this.camera = camera;
     this.renderer = renderer;
     this.orbitControls = orbitControls;
+    
+    // BonePointsManagerの初期化
+    this.bonePointsManager = new BonePointsManager();
+    this.bonePointsManager.initialize();
+    this.bonePointsManager.setCamera(camera);
     
     // TransformControlsの初期化
     this.initializeTransformControls();
@@ -98,17 +104,11 @@ export class VRMBoneController {
   private updateBoneVisualizationPosition(): void {
     if (!this.currentVRM || !this.currentVRM.scene) return;
 
-    // CustomBoneLinesをVRMシーンの子として再配置
-    if (this.customBoneLines && this.customBoneLines.parent === this.scene) {
-      this.scene.remove(this.customBoneLines);
-      this.currentVRM.scene.add(this.customBoneLines);
-      console.log('CustomBoneLinesをVRMシーンに移動しました');
-    }
+    // BonePointsManagerは既にVRMシーン階層に配置されているので、
+    // VRMルートオブジェクトの変更に自動的に追従する（BonePointsパターン）
+    // 座標キャッシュの無効化は自動的にイベントで処理される
 
-    // BonePointsは既にボーンの子として追加されているので、
-    // VRMルートオブジェクトの変更に自動的に追従する
-
-    console.log('VRMBoneController: ボーン表示要素の位置を更新しました');
+    console.log('VRMBoneController: ボーン表示要素の位置を更新しました（BonePointsManager使用）');
   }
 
   /**
@@ -120,11 +120,14 @@ export class VRMBoneController {
     
     this.currentVRM = vrm;
     
+    // BonePointsManagerにVRMを設定
+    this.bonePointsManager.setVRM(vrm);
+    
     if (vrm) {
       // ボーン構造の解析
       this.analyzeVRMBoneStructure(vrm);
       
-      // ボーンの視覚化
+      // ボーンの視覚化（BonePointsManager使用）
       this.visualizeBoneStructure();
     }
   }
@@ -262,11 +265,8 @@ export class VRMBoneController {
    * ボーン視覚化要素をクリア
    */
   private clearBoneVisualization(): void {
-    // カスタムボーン線の削除
-    if (this.customBoneLines) {
-      this.scene.remove(this.customBoneLines);
-      this.customBoneLines = null;
-    }
+    // BonePointsManagerでボーン線をクリア
+    this.bonePointsManager.clearBoneLines();
     
     // ボーンポイントの削除
     for (const point of this.bonePoints) {
@@ -355,17 +355,17 @@ export class VRMBoneController {
     // 引数が指定されていれば、その値に設定。指定がなければ現在の値を反転
     this.bonePointsVisible = visible !== undefined ? visible : !this.bonePointsVisible;
     
-    // カスタムボーン線の表示状態を更新
-    if (this.customBoneLines) {
-      this.customBoneLines.visible = this.bonePointsVisible;
-    }
+    // BonePointsManagerの表示設定を更新
+    this.bonePointsManager.updateDisplaySettings({
+      opacity: this.bonePointsVisible ? 0.8 : 0.0
+    });
     
     // 各ボーンポイントの表示状態を更新
     for (const point of this.bonePoints) {
       point.visible = this.bonePointsVisible;
     }
     
-    console.log(`ボーン表示状態: ${this.bonePointsVisible ? '表示' : '非表示'}`);
+    console.log(`ボーン表示状態: ${this.bonePointsVisible ? '表示' : '非表示'} (BonePointsManager使用)`);
     return this.bonePointsVisible;
   }
   
@@ -570,85 +570,27 @@ export class VRMBoneController {
   private updateBoneVisualizationAndVRM(): void {
     if (!this.currentVRM) return;
 
-    // カスタムボーン線の位置を更新
-    this.updateCustomBoneLines();
+    // BonePointsManagerでボーン線位置を更新
+    this.bonePointsManager.updateBoneLinePositions();
 
     // VRMの更新処理を実行（アニメーションループで実行されるため、ここでは不要）
     // if (this.currentVRM.update) {
     //   this.currentVRM.update(0);
     // }
 
-    console.log('ボーンの視覚化を更新しました');
+    console.log('ボーンの視覚化を更新しました（BonePointsManager使用）');
   }
 
-  /**
-   * カスタムボーン線の位置を動的に更新
-   */
-  private updateCustomBoneLines(): void {
-    if (!this.customBoneLines || !this.currentVRM) return;
 
-    // VRMのスキンメッシュを取得
-    let skinnedMesh: THREE.SkinnedMesh | null = null;
-    this.currentVRM.scene.traverse((object) => {
-      if (object instanceof THREE.SkinnedMesh && !skinnedMesh) {
-        skinnedMesh = object as THREE.SkinnedMesh;
-      }
-    });
-
-    if (!skinnedMesh) return;
-    
-    const skinnedMeshTyped = skinnedMesh as THREE.SkinnedMesh;
-    if (!skinnedMeshTyped.skeleton) return;
-
-    const skeleton = skinnedMeshTyped.skeleton;
-    const bones = skeleton.bones;
-
-    // ボーン階層情報を解析
-    const boneConnections: [THREE.Bone, THREE.Bone][] = [];
-    
-    for (const bone of bones) {
-      // 各ボーンの子ボーンとの接続を追加
-      for (const child of bone.children) {
-        if (child instanceof THREE.Bone) {
-          boneConnections.push([bone, child as THREE.Bone]);
-        }
-      }
-    }
-
-    if (boneConnections.length === 0) return;
-
-    // 新しい位置データを作成
-    const positions: number[] = [];
-    
-    for (const [parentBone, childBone] of boneConnections) {
-      // 親ボーンの位置
-      const parentPos = new THREE.Vector3();
-      parentBone.getWorldPosition(parentPos);
-      
-      // 子ボーンの位置
-      const childPos = new THREE.Vector3();
-      childBone.getWorldPosition(childPos);
-      
-      // 線分の開始点と終了点を追加
-      positions.push(parentPos.x, parentPos.y, parentPos.z);
-      positions.push(childPos.x, childPos.y, childPos.z);
-    }
-
-    // BufferGeometryの位置属性を更新
-    const positionAttribute = this.customBoneLines.geometry.getAttribute('position') as THREE.BufferAttribute;
-    if (positionAttribute) {
-      positionAttribute.set(positions);
-      positionAttribute.needsUpdate = true;
-    }
-  }
 
   /**
-   * カスタムボーン線を作成（ボーン構造の視覚化）
+   * カスタムボーン線を作成（BonePointsManagerに移行済み）
    */
   private createCustomBoneLines(skinnedMesh: THREE.SkinnedMesh): void {
     if (!skinnedMesh.skeleton) return;
     
-    console.log('カスタムボーン線の作成を開始...');
+    console.log('ボーン線作成をBonePointsManagerに委譲します...');
+    
     const skeleton = skinnedMesh.skeleton;
     const bones = skeleton.bones;
     
@@ -671,50 +613,11 @@ export class VRMBoneController {
       return;
     }
     
-    // 線のジオメトリを作成
-    const positions: number[] = [];
-    const colors: number[] = [];
-    
+    // BonePointsManagerでボーン線を作成（実ボーンオブジェクト渡し）
     for (const [parentBone, childBone] of boneConnections) {
-      // 親ボーンの位置
-      const parentPos = new THREE.Vector3();
-      parentBone.getWorldPosition(parentPos);
-      
-      // 子ボーンの位置
-      const childPos = new THREE.Vector3();
-      childBone.getWorldPosition(childPos);
-      
-      // 線分の開始点と終了点を追加
-      positions.push(parentPos.x, parentPos.y, parentPos.z);
-      positions.push(childPos.x, childPos.y, childPos.z);
-      
-      // 色（黄色）
-      colors.push(1, 1, 0); // 親ボーン
-      colors.push(1, 1, 0); // 子ボーン
+      this.bonePointsManager.createBoneLine(parentBone, childBone);
     }
     
-    // BufferGeometry作成
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    
-    // マテリアル作成
-    const material = new THREE.LineBasicMaterial({
-      color: 0xffff00,
-      linewidth: 3,
-      transparent: true,
-      opacity: 0.8,
-      depthTest: false,
-      depthWrite: false,
-      vertexColors: true
-    });
-    
-    // LineSegments作成
-    this.customBoneLines = new THREE.LineSegments(geometry, material);
-    this.customBoneLines.renderOrder = Number.MAX_SAFE_INTEGER - 2;
-    this.customBoneLines.visible = this.bonePointsVisible;
-    this.scene.add(this.customBoneLines);
-    
-    console.log(`カスタムボーン線を作成しました: ${boneConnections.length}本の線`);
+    console.log(`BonePointsManagerでボーン線を作成完了: ${boneConnections.length}本の線`);
   }
 }
