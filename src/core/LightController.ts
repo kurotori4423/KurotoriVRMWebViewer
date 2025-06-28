@@ -221,6 +221,25 @@ export class LightController extends BaseManager {
   }
 
   /**
+   * 方向性ライトの選択を有効化（外部API用）
+   */
+  public enableDirectionalLightSelection(): void {
+    this.enableDirectionalLightTransform();
+    this.emit('light:selected', { 
+      isSelected: true, 
+      lightType: 'directional' as const 
+    });
+  }
+
+  /**
+   * ライト選択を無効化（外部API用）
+   */
+  public disableLightSelection(): void {
+    this.disableLightTransform();
+    this.emit('light:selected', { isSelected: false });
+  }
+
+  /**
    * 環境光の強度を設定
    */
   setAmbientLightIntensity(intensity: number): void {

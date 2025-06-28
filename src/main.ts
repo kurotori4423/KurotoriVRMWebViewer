@@ -537,11 +537,16 @@ function setupLightingHandlers(vrmViewer: VRMViewerRefactored): void {
     updateLightHelperButtonText(vrmViewer);
   });
 
-  // ライト選択機能（実装予定）
+  // ライト選択機能
   selectDirectionalLightBtn?.addEventListener('click', () => {
-    // TODO: ライト選択機能の実装
     const isSelected = vrmViewer.isDirectionalLightSelected();
-    selectDirectionalLightBtn.textContent = isSelected ? '方向性ライト選択' : '選択解除';
+    if (isSelected) {
+      // 現在選択中 → 選択解除
+      vrmViewer.disableLightTransform();
+    } else {
+      // 現在未選択 → 選択
+      vrmViewer.enableDirectionalLightTransform();
+    }
   });
 
   // ライトリセット
@@ -564,6 +569,7 @@ function setupLightingHandlers(vrmViewer: VRMViewerRefactored): void {
 
   // 初期状態の更新
   updateLightHelperButtonText(vrmViewer);
+  updateDirectionalLightSelectionButtonText(vrmViewer);
 }
 
 /**
@@ -1326,6 +1332,11 @@ function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
     updateLightHelperButtonText(vrmViewer);
   });
 
+  // ライト選択状態変更時の処理
+  eventBus.on('light:selected', ({ isSelected }) => {
+    updateDirectionalLightSelectionButtonText(vrmViewer, isSelected);
+  });
+
   // VRMロード時の処理
   eventBus.on('vrm:loaded', ({ index }) => {
     updateVRMCount(vrmViewer);
@@ -1566,6 +1577,17 @@ function updateLightHelperButtonText(vrmViewer: VRMViewerRefactored): void {
   if (toggleLightHelpersBtn) {
     const visible = vrmViewer.getLightHelpersVisible();
     toggleLightHelpersBtn.textContent = visible ? 'ライトヘルパー非表示' : 'ライトヘルパー表示';
+  }
+}
+
+/**
+ * 方向性ライト選択ボタンのテキストを更新
+ */
+function updateDirectionalLightSelectionButtonText(vrmViewer: VRMViewerRefactored, isSelected?: boolean): void {
+  const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
+  if (selectDirectionalLightBtn) {
+    const selected = isSelected !== undefined ? isSelected : vrmViewer.isDirectionalLightSelected();
+    selectDirectionalLightBtn.textContent = selected ? '選択解除' : '方向性ライト選択';
   }
 }
 

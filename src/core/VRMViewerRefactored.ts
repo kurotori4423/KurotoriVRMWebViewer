@@ -345,7 +345,15 @@ export class VRMViewerRefactored {
     const lightSelected = this.lightController.handleRaycast(this.raycaster);
     
     if (!lightSelected) {
-      // ライトが選択されていない場合のみボーン選択処理を行う
+      // ライトが選択されていない場合
+      
+      // 現在ライトが選択中の場合は選択解除
+      if (this.lightController.isDirectionalLightSelected()) {
+        this.lightController.disableLightSelection();
+        return; // 選択解除処理のみ実行してリターン
+      }
+      
+      // ボーン選択処理を実行
       const selectedModel = this.selectionManager.getSelectedModel();
       if (selectedModel) {
         this.boneController.selectBoneByRaycast(this.raycaster);
@@ -898,15 +906,13 @@ export class VRMViewerRefactored {
     return this.lightController.getLightSettings();
   }
 
-  // 不足していたメソッドを追加
+  // ライト制御メソッド
   disableLightTransform(): void {
-    // TODO: 実装
-    console.log('disableLightTransform called');
+    this.lightController.disableLightSelection();
   }
 
   enableDirectionalLightTransform(): void {
-    // TODO: 実装  
-    console.log('enableDirectionalLightTransform called');
+    this.lightController.enableDirectionalLightSelection();
   }
 
   /**
