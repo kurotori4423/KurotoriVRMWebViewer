@@ -2397,3 +2397,207 @@ h3 {
     outline-color: #60a5fa;
   }
 }
+
+/* VRMA アニメーション制御セクション */
+.vrma-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* セクションタイトル */
+.vrma-section .section-title {
+  font-size: 1.17em;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--text-primary, #333);
+}
+
+/* アップロード領域 */
+.upload-zone {
+  border: 2px dashed rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.upload-zone:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-zone.dragover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  transform: scale(1.02);
+}
+
+/* アップロードテキスト */
+.upload-text {
+  margin: 10px 0;
+  color: var(--text-secondary, #666);
+  font-size: 0.9em;
+}
+
+.upload-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+/* アニメーション情報 */
+.animation-info {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+}
+
+.info-value {
+  color: var(--text-primary, #333);
+  font-family: monospace;
+}
+
+/* 制御ボタン */
+.control-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.play-pause-btn, .delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.play-pause-btn:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.delete-btn .button-icon {
+  filter: brightness(0) invert(1);
+}
+
+.button-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.button-text {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .vrma-section {
+    background: rgba(26, 26, 26, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .vrma-section .section-title {
+    color: #ffffff;
+  }
+  
+  .animation-info {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .info-label {
+    color: #ccc;
+  }
+  
+  .info-value {
+    color: #ffffff;
+  }
+  
+  .upload-text {
+    color: #ccc;
+  }
+  
+  .play-pause-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .play-pause-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 640px) {
+  .vrma-section {
+    padding: 15px;
+  }
+  
+  .upload-zone {
+    padding: 30px 15px;
+  }
+  
+  .control-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .play-pause-btn, .delete-btn {
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+  }
+}
