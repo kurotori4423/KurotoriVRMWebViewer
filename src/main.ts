@@ -41,7 +41,15 @@ async function main() {
         
         <!-- 読み込み済みモデル一覧 -->
         <div id="vrm-list-container">
-          <h3>読み込み済みモデル</h3>
+          <div class="section-header">
+            <h3>読み込み済みモデル</h3>
+            <button class="icon-button danger" id="delete-all-models">
+              <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+                <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+              </svg>
+              <span class="button-label">全削除</span>
+            </button>
+          </div>
           <div id="vrm-list">
             <div id="no-models-message" class="no-models">
               モデルが読み込まれていません
@@ -128,79 +136,89 @@ async function main() {
           <h3>選択中モデル設定</h3>
           <span class="close" id="model-modal-close">&times;</span>
         </div>
-        <div class="modal-body">
-          <div id="model-info">
-            <p>選択中: <span id="selected-model-name">なし</span></p>
-          </div>
-          <div class="control-group">
-            <button id="reset-model" class="control-btn">リセット</button>
-            <button id="focus-model" class="control-btn">フォーカス</button>
-          </div>
-          <div class="control-group">
-            <button id="toggle-root-transform" class="control-btn">ルート操作モード</button>
-          </div>
-          <!-- ルート操作設定（ルート操作モード時のみ表示） -->
-          <div id="root-transform-settings" class="control-group" style="display: none;">
-            <div class="radio-group">
-              <input type="radio" id="root-translate-mode" name="root-mode" value="translate" checked />
-              <label for="root-translate-mode">移動</label>
-              <input type="radio" id="root-rotate-mode" name="root-mode" value="rotate" />
-              <label for="root-rotate-mode">回転</label>
-            </div>
-
-          </div>
-          <div class="control-group">
-            <label for="model-scale">スケール:</label>
-            <input type="range" id="model-scale" min="0.1" max="3.0" step="0.1" value="1.0" />
-            <span id="scale-value">1.0</span>
-          </div>
-          <div class="control-group">
-            <button id="toggle-model-visibility" class="control-btn">表示/非表示</button>
-            <button id="duplicate-model" class="control-btn">複製</button>
-          </div>
-          <div class="control-group">
-            <button id="delete-selected-model" class="control-btn danger-btn">選択削除</button>
-            <button id="delete-all-models" class="control-btn danger-btn">全削除</button>
-          </div>
+        
+        <!-- 常時表示ボタンエリア -->
+        <div class="action-buttons">
+          <button class="icon-button" id="reset-model" data-action="reset">
+            <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+              <path d="M480-80q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80Z"/>
+            </svg>
+          </button>
+          <button class="icon-button" id="focus-model" data-action="focus">
+            <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+              <path d="M480-480q-51 0-85.5-34.5T360-600q0-50 34.5-85t85.5-35q50 0 85 35t35 85q0 51-35 85.5T480-480Zm0-80q17 0 28.5-11.5T520-600q0-17-11.5-28.5T480-640q-17 0-28.5 11.5T440-600q0 17 11.5 28.5T480-560ZM240-240v-76q0-21 10.5-39.5T279-385q46-27 96.5-41T480-440q54 0 104.5 14t96.5 41q18 11 28.5 29.5T720-316v76H240Zm240-120q-41 0-80 10t-74 30h308q-35-20-74-30t-80-10Zm0-240Zm0 280h154-308 154ZM160-80q-33 0-56.5-23.5T80-160v-160h80v160h160v80H160ZM80-640v-160q0-33 23.5-56.5T160-880h160v80H160v160H80ZM640-80v-80h160v-160h80v160q0 33-23.5 56.5T800-80H640Zm160-560v-160H640v-80h160q33 0 56.5 23.5T880-800v160h-80Z"/>
+            </svg>
+          </button>
+          <button class="icon-button" id="toggle-model-visibility" data-action="visibility">
+            <img class="button-icon" src="/assets/icons/visibility.svg" alt="表示" width="20" height="20" />
+          </button>
+          <button class="icon-button danger" id="delete-selected-model" data-action="delete">
+            <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+              <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+            </svg>
+          </button>
         </div>
         
-        <!-- ボーン操作セクション -->
-        <div class="modal-section">
-          <div class="modal-header">
-            <h3>ボーン操作</h3>
+        <!-- タブ構造 -->
+        <div class="tab-container">
+          <div class="tab-buttons" role="tablist">
+            <button class="tab-button active" role="tab" data-tab="basic" aria-selected="true" aria-controls="basic-panel">基本</button>
+            <button class="tab-button" role="tab" data-tab="pose" aria-selected="false" aria-controls="pose-panel">ポーズ</button>
+            <button class="tab-button" role="tab" data-tab="expression" aria-selected="false" aria-controls="expression-panel">表情</button>
           </div>
-          <div class="modal-body">
-            <div class="control-group">
-              <button id="toggle-bone-visibility" class="control-btn">ボーン表示切替</button>
-              <button id="reset-all-bones" class="control-btn">ポーズリセット</button>
+          <div class="tab-content">
+                          <!-- 基本タブコンテンツ -->
+              <div class="tab-panel active" id="basic-panel" role="tabpanel" aria-labelledby="basic-tab">
+                <div id="model-info">
+                  <p>選択中: <span id="selected-model-name">なし</span></p>
+                </div>
+                <!-- ルート操作設定（基本タブでは常時表示） -->
+                <div id="root-transform-settings" class="control-group">
+                  <div class="radio-group">
+                    <input type="radio" id="root-translate-mode" name="root-mode" value="translate" checked />
+                    <label for="root-translate-mode">移動</label>
+                    <input type="radio" id="root-rotate-mode" name="root-mode" value="rotate" />
+                    <label for="root-rotate-mode">回転</label>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label for="model-scale">スケール:</label>
+                  <input type="range" id="model-scale" min="0.1" max="3.0" step="0.1" value="1.0" />
+                  <span id="scale-value">1.0</span>
+                </div>
+                <div class="control-group">
+                  <button id="duplicate-model" class="control-btn">複製</button>
+                </div>
+              </div>
+            
+            <!-- ポーズタブコンテンツ -->
+            <div class="tab-panel" id="pose-panel" role="tabpanel" aria-labelledby="pose-tab" style="display: none;">
+              <div class="control-group">
+                <button id="toggle-bone-visibility" class="control-btn">ボーン表示切替</button>
+                <button id="reset-all-bones" class="control-btn">ポーズリセット</button>
+              </div>
+              <div class="control-group">
+                <input type="radio" id="bone-rotate-mode" name="bone-mode" value="rotate" checked />
+                <label for="bone-rotate-mode">回転</label>
+                <input type="radio" id="bone-translate-mode" name="bone-mode" value="translate" />
+                <label for="bone-translate-mode">移動</label>
+              </div>
+              <div id="selected-bone-info">
+                <p>選択中ボーン: <span id="selected-bone-name">なし</span></p>
+              </div>
             </div>
-            <div class="control-group">
-              <input type="radio" id="bone-rotate-mode" name="bone-mode" value="rotate" checked />
-              <label for="bone-rotate-mode">回転</label>
-              <input type="radio" id="bone-translate-mode" name="bone-mode" value="translate" />
-              <label for="bone-translate-mode">移動</label>
-            </div>
-
-            <div id="selected-bone-info">
-              <p>選択中ボーン: <span id="selected-bone-name">なし</span></p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 表情制御セクション -->
-        <div class="modal-section" id="expression-control-section">
-          <div class="modal-header">
-            <h3>表情制御</h3>
-          </div>
-          <div class="modal-body">
-            <div class="control-group">
-              <button id="reset-all-expressions" class="control-btn">表情リセット</button>
-            </div>
-            <div id="expression-status">
-              <p class="expression-info">モデルを選択してください</p>
-            </div>
-            <div id="expression-controls" class="expression-controls" style="display: none;">
-              <!-- 表情スライダーが動的に挿入されます -->
+            
+            <!-- 表情タブコンテンツ -->
+            <div class="tab-panel" id="expression-panel" role="tabpanel" aria-labelledby="expression-tab" style="display: none;">
+              <div class="control-group">
+                <button id="reset-all-expressions" class="control-btn">表情リセット</button>
+              </div>
+              <div id="expression-status">
+                <p class="expression-info">モデルを選択してください</p>
+              </div>
+              <div id="expression-controls" class="expression-controls" style="display: none;">
+                <!-- 表情スライダーが動的に挿入されます -->
+              </div>
             </div>
           </div>
         </div>
@@ -551,34 +569,19 @@ function setupBackgroundHandlers(vrmViewer: VRMViewerRefactored): void {
  * モデル制御関連のイベントハンドラーを設定
  */
 function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
-  const resetModelBtn = document.getElementById('reset-model') as HTMLButtonElement;
-  const focusModelBtn = document.getElementById('focus-model') as HTMLButtonElement;
+  // スケールスライダー（タブ機能影響なし）
   const modelScaleSlider = document.getElementById('model-scale') as HTMLInputElement;
   const scaleValueSpan = document.getElementById('scale-value') as HTMLSpanElement;
-  const toggleModelVisibilityBtn = document.getElementById('toggle-model-visibility') as HTMLButtonElement;
-  const duplicateModelBtn = document.getElementById('duplicate-model') as HTMLButtonElement;
-  const deleteSelectedModelBtn = document.getElementById('delete-selected-model') as HTMLButtonElement;
-  const deleteAllModelsBtn = document.getElementById('delete-all-models') as HTMLButtonElement;
-
-  resetModelBtn?.addEventListener('click', () => {
-    vrmViewer.resetModel();
-  });
-
-  focusModelBtn?.addEventListener('click', () => {
-    vrmViewer.focusOnSelectedModel();
-  });
-
+  
   modelScaleSlider?.addEventListener('input', (e) => {
     const scale = parseFloat((e.target as HTMLInputElement).value);
     vrmViewer.setModelScale(scale);
     if (scaleValueSpan) scaleValueSpan.textContent = scale.toFixed(1);
   });
 
-  toggleModelVisibilityBtn?.addEventListener('click', () => {
-    const visible = vrmViewer.toggleSelectedModelVisibility();
-    toggleModelVisibilityBtn.textContent = visible ? '非表示' : '表示';
-  });
-
+  // 複製ボタン（タブ機能影響なし）
+  const duplicateModelBtn = document.getElementById('duplicate-model') as HTMLButtonElement;
+  
   duplicateModelBtn?.addEventListener('click', async () => {
     const success = await vrmViewer.duplicateSelectedModel();
     if (success) {
@@ -588,31 +591,14 @@ function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
     }
   });
 
-  deleteSelectedModelBtn?.addEventListener('click', () => {
-    if (confirm('選択したモデルを削除しますか？')) {
-      vrmViewer.deleteSelectedModel();
-    }
-  });
+  // 注意: 以下のボタンは新しいタブ対応のsetupActionButtonHandlersで処理されるため、ここでは設定しない
+  // - reset-model
+  // - focus-model  
+  // - toggle-model-visibility
+  // - delete-selected-model
+  // - delete-all-models
 
-  deleteAllModelsBtn?.addEventListener('click', () => {
-    if (confirm('全てのVRMモデルを削除しますか？')) {
-      vrmViewer.removeAllVRMs();
-    }
-  });
-
-  // VRMルートTransformControls切り替えボタン
-  const toggleRootTransformBtn = document.getElementById('toggle-root-transform') as HTMLButtonElement;
-  const rootTransformSettings = document.getElementById('root-transform-settings') as HTMLDivElement;
-  
-  toggleRootTransformBtn?.addEventListener('click', () => {
-    const isVisible = vrmViewer.toggleRootTransform();
-    toggleRootTransformBtn.textContent = isVisible ? 'ルート操作終了' : 'ルート操作モード';
-    
-    // ルート操作設定の表示/非表示を切り替え
-    if (rootTransformSettings) {
-      rootTransformSettings.style.display = isVisible ? 'block' : 'none';
-    }
-  });
+  // 注意: toggle-root-transformボタンは基本タブから削除されたため、イベントハンドラーも削除
 
   // ルート操作モード切り替え（移動・回転）
   const rootTranslateModeRadio = document.getElementById('root-translate-mode') as HTMLInputElement;
@@ -632,7 +618,227 @@ function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
     }
   });
 
+  // 新しいタブ対応モデル制御関連のイベントハンドラーを設定
+  setupNewModelControlHandlers(vrmViewer);
+}
 
+/**
+ * 新しいタブ対応モデル制御関連のイベントハンドラーを設定
+ * FEAT-012: Tab system integration with VRM controllers
+ */
+function setupNewModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
+  // Tab system event handlers
+  setupTabHandlers(vrmViewer);
+  
+  // Action buttons event handlers  
+  setupActionButtonHandlers(vrmViewer);
+  
+  // Initialize default tab state
+  initializeTabState(vrmViewer);
+}
+
+/**
+ * タブシステムのイベントハンドラーを設定
+ */
+function setupTabHandlers(vrmViewer: VRMViewerRefactored): void {
+  const tabButtons = document.querySelectorAll('.tab-button');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const tabButton = e.target as HTMLButtonElement;
+      const tabName = tabButton.getAttribute('data-tab');
+      
+      if (tabName) {
+        switchTab(tabName, vrmViewer);
+      }
+    });
+  });
+}
+
+/**
+ * タブ切替ロジック
+ */
+function switchTab(tabName: string, vrmViewer: VRMViewerRefactored): void {
+  // Update tab button states
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  
+  // Remove active states
+  tabButtons.forEach(btn => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+  
+  tabPanels.forEach(panel => {
+    panel.classList.remove('active');
+    (panel as HTMLElement).style.display = 'none';
+  });
+  
+  // Set active states
+  const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+  const activePanel = document.getElementById(`${tabName}-panel`);
+  
+  if (activeButton && activePanel) {
+    activeButton.classList.add('active');
+    activeButton.setAttribute('aria-selected', 'true');
+    activePanel.classList.add('active');
+    activePanel.style.display = 'block';
+  }
+  
+  // Execute tab-specific VRM controller actions
+  executeTabSpecificActions(tabName, vrmViewer);
+  
+  console.log(`タブ切替: ${tabName}`);
+}
+
+/**
+ * タブ固有のVRMコントローラー連動アクション
+ */
+function executeTabSpecificActions(tabName: string, vrmViewer: VRMViewerRefactored): void {
+  const selectedIndex = vrmViewer.getSelectedModelIndex();
+  if (selectedIndex === -1) return;
+
+  switch (tabName) {
+    case 'basic':
+      // 基本タブ: 自動的にルート操作ON、ボーン非表示
+      if (!vrmViewer.isRootTransformVisible()) {
+        vrmViewer.toggleRootTransform();
+      }
+      // ボーン非表示に設定（戻り値が現在の状態を返す）
+      vrmViewer.toggleBoneVisibility(false);
+      console.log('基本タブ: ルート操作ON・ボーン非表示');
+      break;
+      
+    case 'pose':  
+      // ポーズタブ: 自動的にルート操作OFF、ボーン表示ON
+      if (vrmViewer.isRootTransformVisible()) {
+        vrmViewer.toggleRootTransform();
+      }
+      // ボーン表示に設定（戻り値が現在の状態を返す）
+      vrmViewer.toggleBoneVisibility(true);
+      
+      // UIボタンテキスト更新
+      const toggleBoneBtn = document.getElementById('toggle-bone-visibility') as HTMLButtonElement;
+      if (toggleBoneBtn) {
+        toggleBoneBtn.textContent = 'ボーン非表示';
+      }
+      
+      console.log('ポーズタブ: ルート操作OFF・ボーン表示ON');
+      break;
+      
+    case 'expression':
+      // 表情タブ: ルート操作・ボーン両方OFF
+      if (vrmViewer.isRootTransformVisible()) {
+        vrmViewer.toggleRootTransform();
+      }
+      // ボーン非表示に設定
+      vrmViewer.toggleBoneVisibility(false);
+      
+      // 表情コントロールUIの更新（FEAT-011の機能活用）
+      const vrm = vrmViewer.getVRMModels()[selectedIndex];
+      if (vrm) {
+        updateExpressionControls(vrmViewer, selectedIndex, vrm);
+      }
+      
+      console.log('表情タブ: ルート操作・ボーン両方OFF');
+      break;
+  }
+}
+
+/**
+ * アクションボタンのイベントハンドラーを設定
+ */
+function setupActionButtonHandlers(vrmViewer: VRMViewerRefactored): void {
+  // リセットボタン（既存のID再利用、重複リスナー回避）
+  const resetBtn = document.getElementById('reset-model') as HTMLButtonElement;
+  if (resetBtn && !resetBtn.hasAttribute('data-tab-handler')) {
+    resetBtn.addEventListener('click', () => {
+      vrmViewer.resetModel();
+      console.log('アクションボタン: モデルリセット実行');
+    });
+    resetBtn.setAttribute('data-tab-handler', 'true');
+  }
+  
+  // フォーカスボタン
+  const focusBtn = document.getElementById('focus-model') as HTMLButtonElement;
+  if (focusBtn && !focusBtn.hasAttribute('data-tab-handler')) {
+    focusBtn.addEventListener('click', () => {
+      vrmViewer.focusOnSelectedModel();
+      console.log('アクションボタン: モデルフォーカス実行');
+    });
+    focusBtn.setAttribute('data-tab-handler', 'true');
+  }
+  
+  // 表示切替ボタン（アイコン動的変更付き）
+  const visibilityBtn = document.getElementById('toggle-model-visibility') as HTMLButtonElement;
+  if (visibilityBtn && !visibilityBtn.hasAttribute('data-tab-handler')) {
+    visibilityBtn.addEventListener('click', () => {
+      const isVisible = vrmViewer.toggleSelectedModelVisibility();
+      updateVisibilityButtonIcon(visibilityBtn, isVisible);
+      console.log(`アクションボタン: モデル表示切替 - ${isVisible ? '表示' : '非表示'}`);
+    });
+    visibilityBtn.setAttribute('data-tab-handler', 'true');
+  }
+  
+  // 削除ボタン
+  const deleteBtn = document.getElementById('delete-selected-model') as HTMLButtonElement;
+  if (deleteBtn && !deleteBtn.hasAttribute('data-tab-handler')) {
+    deleteBtn.addEventListener('click', () => {
+      if (confirm('選択したモデルを削除しますか？')) {
+        vrmViewer.deleteSelectedModel();
+        console.log('アクションボタン: 選択モデル削除実行');
+      }
+    });
+    deleteBtn.setAttribute('data-tab-handler', 'true');
+  }
+  
+  // 全削除ボタン（新配置）
+  const deleteAllBtn = document.getElementById('delete-all-models') as HTMLButtonElement;
+  if (deleteAllBtn && !deleteAllBtn.hasAttribute('data-tab-handler')) {
+    deleteAllBtn.addEventListener('click', () => {
+      if (confirm('全てのVRMモデルを削除しますか？')) {
+        vrmViewer.removeAllVRMs();
+        console.log('アクションボタン: 全モデル削除実行');
+      }
+    });
+    deleteAllBtn.setAttribute('data-tab-handler', 'true');
+  }
+}
+
+/**
+ * 表示切替ボタンのアイコンを動的に更新
+ */
+function updateVisibilityButtonIcon(button: HTMLButtonElement, isVisible: boolean): void {
+  const iconImg = button.querySelector('.button-icon') as HTMLImageElement;
+  
+  if (iconImg) {
+    if (isVisible) {
+      // 表示状態: visibility.svgアイコン（目のマーク）
+      iconImg.src = '/assets/icons/visibility.svg';
+      iconImg.alt = '表示';
+    } else {
+      // 非表示状態: visibility_off.svgアイコン（目に✕のマーク）
+      iconImg.src = '/assets/icons/visibility_off.svg';
+      iconImg.alt = '非表示';
+    }
+  }
+}
+
+/**
+ * タブシステムの初期状態を設定
+ */
+function initializeTabState(vrmViewer: VRMViewerRefactored): void {
+  // デフォルトで「基本」タブをアクティブ化
+  switchTab('basic', vrmViewer);
+  
+  // 表示切替ボタンの初期アイコン状態を設定
+  const visibilityBtn = document.getElementById('toggle-model-visibility') as HTMLButtonElement;
+  if (visibilityBtn) {
+    // 初期状態は表示と仮定
+    updateVisibilityButtonIcon(visibilityBtn, true);
+  }
+  
+  console.log('タブシステム初期化完了 - 基本タブアクティブ');
 }
 
 /**
@@ -1102,6 +1308,12 @@ function updateSelectedModelControls(vrmViewer: VRMViewerRefactored): void {
     if (modelScaleSlider) modelScaleSlider.value = currentScale.toString();
     if (scaleValueSpan) scaleValueSpan.textContent = currentScale.toFixed(1);
     
+    // 現在のタブに応じたギズモ・ボーン制御を実行
+    updateTabBasedControls(vrmViewer);
+    
+    // 表示ボタンの状態を新しく選択されたモデルの表示状態に同期
+    updateVisibilityButtonState(vrmViewer);
+    
     // 右下モーダルを表示
     if (selectedModelModal) {
       selectedModelModal.style.display = 'block';
@@ -1125,6 +1337,41 @@ function updateLightHelperButtonText(vrmViewer: VRMViewerRefactored): void {
   if (toggleLightHelpersBtn) {
     const visible = vrmViewer.getLightHelpersVisible();
     toggleLightHelpersBtn.textContent = visible ? 'ライトヘルパー非表示' : 'ライトヘルパー表示';
+  }
+}
+
+/**
+ * 現在のタブに応じたギズモ・ボーン制御を実行
+ * モデル切り替え時に呼び出される
+ */
+function updateTabBasedControls(vrmViewer: VRMViewerRefactored): void {
+  // 現在アクティブなタブを取得
+  const activeTabButton = document.querySelector('.tab-button.active') as HTMLButtonElement;
+  
+  if (activeTabButton) {
+    const currentTab = activeTabButton.getAttribute('data-tab');
+    
+    if (currentTab) {
+      // 現在のタブに応じたVRMコントローラー制御を実行
+      executeTabSpecificActions(currentTab, vrmViewer);
+    }
+  }
+}
+
+/**
+ * 表示ボタンの状態を新しく選択されたモデルの表示状態に同期
+ * モデル切り替え時に呼び出される
+ */
+function updateVisibilityButtonState(vrmViewer: VRMViewerRefactored): void {
+  const visibilityButton = document.getElementById('toggle-model-visibility') as HTMLButtonElement;
+  
+  if (visibilityButton) {
+    // 現在選択されているモデルの表示状態を取得
+    const selectedModel = vrmViewer.getSelectedModel();
+    const isVisible = selectedModel && (selectedModel as any).scene ? (selectedModel as any).scene.visible : true;
+    
+    // 表示ボタンのアイコンを実際の表示状態に同期
+    updateVisibilityButtonIcon(visibilityButton, isVisible);
   }
 }
 
