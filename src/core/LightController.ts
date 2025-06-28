@@ -122,7 +122,7 @@ export class LightController extends BaseManager {
 
     // TransformControlsの作成
     this.lightTransformControls = new TransformControls(this.camera, this.renderer.domElement);
-    this.lightTransformControls.setMode('translate');
+    this.lightTransformControls.setMode('rotate');
     this.lightTransformControls.enabled = false;
 
     const gizmo = this.lightTransformControls.getHelper();
@@ -143,9 +143,19 @@ export class LightController extends BaseManager {
 
     this.lightTransformControls.addEventListener('change', () => {
       if (this.lightTransformControls?.object === this.directionalLight) {
-        // ライトヘルパーとコライダーの位置を更新
+        // 方向性ライトの回転を適用
+        // DirectionalLightの向きは position から target.position への方向で決まる
+        const direction = new THREE.Vector3(0, -1, 0); // デフォルトの下向き
+        direction.applyQuaternion(this.directionalLight.quaternion);
+        
+        // ターゲット位置を計算（ライト位置から1単位離れた位置）
+        this.directionalLight.target.position.copy(this.directionalLight.position).add(direction);
+        this.directionalLight.target.updateMatrixWorld();
+        
+        // ライトヘルパーとコライダーの位置・回転を更新
         if (this.directionalLightCollider) {
           this.directionalLightCollider.position.copy(this.directionalLight.position);
+          this.directionalLightCollider.quaternion.copy(this.directionalLight.quaternion);
         }
         
         if (this.directionalLightHelper) {
