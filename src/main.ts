@@ -727,6 +727,34 @@ function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
       selectDirectionalLightBtn.textContent = isSelected ? '選択解除' : '方向性ライト選択';
     }
   });
+
+  // TransformMode自動変更時のUI更新処理
+  vrmViewer.setOnTransformModeAutoChanged((mode) => {
+    const boneRotateModeRadio = document.getElementById('bone-rotate-mode') as HTMLInputElement;
+    const boneTranslateModeRadio = document.getElementById('bone-translate-mode') as HTMLInputElement;
+    
+    if (mode === 'rotate') {
+      if (boneRotateModeRadio) boneRotateModeRadio.checked = true;
+      if (boneTranslateModeRadio) boneTranslateModeRadio.checked = false;
+      
+      // 視覚的フィードバック（簡易的な通知）
+      const selectedBoneNameSpan = document.getElementById('selected-bone-name') as HTMLSpanElement;
+      if (selectedBoneNameSpan) {
+        const originalText = selectedBoneNameSpan.textContent;
+        const originalColor = selectedBoneNameSpan.style.color;
+        selectedBoneNameSpan.style.color = 'orange';
+        selectedBoneNameSpan.textContent = '自動的にrotateモードに変更されました';
+        
+        // 3秒後に元に戻す
+        setTimeout(() => {
+          selectedBoneNameSpan.style.color = originalColor;
+          selectedBoneNameSpan.textContent = originalText;
+        }, 3000);
+      }
+      
+      console.log('UIを自動的にrotateモードに更新しました');
+    }
+  });
 }
 
 // ==================== ユーティリティ関数 ====================

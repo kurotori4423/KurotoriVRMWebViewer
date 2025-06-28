@@ -23,12 +23,16 @@ export class VRMBoneController {
   private bonePointsVisible: boolean = true;
   private selectedBone: THREE.Bone | null = null;
   private boneTransformControls: TransformControls | null = null;
+  private currentTransformMode: 'rotate' | 'translate' = 'rotate'; // 現在のモードを保持
   
   // ボーンマッピング
   private humanoidBones: Map<VRMHumanBoneName, THREE.Bone> = new Map();
 
   // ボーン選択状態変更コールバック
   private onBoneSelectionChanged: ((boneName: string | null) => void) | null = null;
+  
+  // UI更新コールバック（モード自動変更時に使用）
+  private onTransformModeAutoChanged: ((mode: 'rotate' | 'translate') => void) | null = null;
 
   /**
    * コンストラクタ
@@ -398,6 +402,9 @@ export class VRMBoneController {
         if (this.onBoneSelectionChanged) {
           this.onBoneSelectionChanged(boneName);
         }
+        
+        // 重要: ボーン選択変更時のtranslateモード制限チェック
+        this.checkTransformModeAfterBoneSelection();
       }
     } else {
       // 何も選択されていない場合、選択を解除
@@ -475,6 +482,8 @@ export class VRMBoneController {
       }
     }
 
+    // モードを設定し、内部状態を更新
+    this.currentTransformMode = mode;
     this.boneTransformControls.setMode(mode);
     console.log(`Transformモードを変更: ${mode}`);
   }
@@ -560,6 +569,43 @@ export class VRMBoneController {
    */
   setOnBoneSelectionChanged(callback: ((boneName: string | null) => void) | null): void {
     this.onBoneSelectionChanged = callback;
+  }
+
+  /**
+   * TransformModeの自動変更コールバックを設定
+   */
+  setOnTransformModeAutoChanged(callback: ((mode: 'rotate' | 'translate') => void) | null): void {
+    this.onTransformModeAutoChanged = callback;
+  }
+
+  /**
+   * ボーン選択変更後のTransformMode制限チェック
+   * translateモード中にHips以外のボーンが選択された場合、rotateモードに自動変更
+   */
+  private checkTransformModeAfterBoneSelection(): void {
+    // 現在のモードがtranslateモードでない場合は何もしない
+    if (this.currentTransformMode !== 'translate') {
+      return;
+    }
+
+    // 選択されたボーンがHips以外の場合、rotateモードに自動変更
+    if (!this.isSelectedBoneTranslatable()) {
+      console.warn('translateモード中にHips以外のボーンが選択されました。rotateモードに自動変更します。');
+      
+      // 内部状態をrotateモードに変更
+      this.currentTransformMode = 'rotate';
+      
+      if (this.boneTransformControls) {
+        this.boneTransformControls.setMode('rotate');
+      }
+      
+      // UI更新のためのコールバックを呼び出し
+      if (this.onTransformModeAutoChanged) {
+        this.onTransformModeAutoChanged('rotate');
+      }
+      
+      console.log('translateモードからrotateモードに自動変更しました');
+    }
   }
 
   /**

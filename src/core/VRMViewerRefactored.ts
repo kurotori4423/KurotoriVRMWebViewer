@@ -364,6 +364,13 @@ export class VRMViewerRefactored {
   }
 
   /**
+   * TransformModeの自動変更コールバックを設定
+   */
+  setOnTransformModeAutoChanged(callback: ((mode: 'rotate' | 'translate') => void) | null): void {
+    this.boneController.setOnTransformModeAutoChanged(callback);
+  }
+
+  /**
    * すべてのボーンをリセット
    */
   resetAllBonePoses(): void {
