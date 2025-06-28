@@ -1309,6 +1309,50 @@ h3 {
   font-style: italic;
 }
 
+/* ダークテーマ対応 */
+@media (prefers-color-scheme: dark) {
+  .modal .modal-content {
+    background: #2a2a2a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal .modal-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .modal .modal-header h2 {
+    color: #ffffff;
+  }
+
+  .modal .close {
+    color: #ccc;
+  }
+
+  .modal .close:hover {
+    background: #444;
+    color: #ffffff;
+  }
+
+  .modal .load-option {
+    background: #333;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .modal .load-option:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+  }
+
+  .modal .load-option h3 {
+    color: #ffffff;
+  }
+
+  .modal .note {
+    color: #ccc;
+  }
+}
+
 /* VRMモデル一覧カード型スタイル */
 .vrm-item {
   display: flex;
