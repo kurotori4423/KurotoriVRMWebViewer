@@ -1650,3 +1650,182 @@ h3 {
     color: #ccc;
   }
 }
+
+/* ====================================== */
+/* UI-001: 上部ツールバー Glassmorphism */
+/* ====================================== */
+
+/* ツールバー基本スタイル */
+#top-toolbar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200; /* サイドバー(1000)より上、詳細ウィンドウ(1500)より下 */
+  
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  min-height: 48px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  
+  /* Transitions */
+  transition: all 0.3s ease;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  #top-toolbar {
+    background: rgba(26, 26, 26, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+  }
+}
+
+/* ツールバーラベル */
+.toolbar-label {
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .toolbar-label {
+    color: #ffffff;
+  }
+}
+
+/* 座標系プルダウンメニュー */
+.coordinate-space-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* セレクトボックス */
+.dropdown-select {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 90px;
+}
+
+.dropdown-select:hover {
+  background: rgba(100, 108, 255, 0.1);
+  border-color: rgba(100, 108, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.dropdown-select:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+/* ドロップダウンアイコン */
+.dropdown-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6c757d;
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-select:focus + .dropdown-icon {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .dropdown-select {
+    background: rgba(26, 26, 26, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+  
+  .dropdown-select:hover {
+    background: rgba(100, 108, 255, 0.2);
+    border-color: rgba(100, 108, 255, 0.4);
+  }
+  
+  .dropdown-icon {
+    color: #ccc;
+  }
+  
+  .dropdown-select option {
+    background: #2a2a2a;
+    color: #ffffff;
+  }
+}
+
+/* 将来拡張エリア */
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* 右寄せ */
+}
+
+/* レスポンシブデザイン */
+
+/* タブレット (768px以下) */
+@media (max-width: 768px) {
+  #top-toolbar {
+    left: 20px;
+    right: 20px;
+    transform: none;
+    width: calc(100% - 40px);
+    font-size: 13px;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+}
+
+/* スマートフォン (480px以下) */
+@media (max-width: 480px) {
+  #top-toolbar {
+    left: 10px;
+    right: 10px;
+    width: calc(100% - 20px);
+    gap: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .toolbar-label {
+    display: none; /* ラベル非表示でスペース確保 */
+  }
+  
+  .dropdown-select {
+    padding: 6px 28px 6px 10px;
+    font-size: 12px;
+    min-width: 80px;
+  }
+  
+  .dropdown-icon {
+    right: 6px;
+    font-size: 10px;
+  }
+}

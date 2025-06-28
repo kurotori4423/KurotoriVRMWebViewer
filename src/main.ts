@@ -14,6 +14,21 @@ async function main() {
     <div id="vrm-viewer-container">
       <canvas id="vrm-canvas"></canvas>
       
+      <!-- 上部ツールバー -->
+      <div id="top-toolbar">
+        <span class="toolbar-label">🌐 座標系:</span>
+        <div class="coordinate-space-dropdown">
+          <select id="coordinate-space-select" class="dropdown-select">
+            <option value="world" selected>Global</option>
+            <option value="local">Local</option>
+          </select>
+          <div class="dropdown-icon">▼</div>
+        </div>
+        <div class="toolbar-actions">
+          <!-- 将来のギズモ機能（移動/回転/スケール切替など）がここに追加される -->
+        </div>
+      </div>
+      
       <!-- 左サイドバー -->
       <div id="left-sidebar">
         <h1>KurotoriVRM WebViewer</h1>
@@ -132,13 +147,7 @@ async function main() {
               <input type="radio" id="root-rotate-mode" name="root-mode" value="rotate" />
               <label for="root-rotate-mode">回転</label>
             </div>
-            <div class="radio-group">
-              <label>座標系:</label>
-              <input type="radio" id="root-world-space" name="root-coordinate-space" value="world" checked />
-              <label for="root-world-space">ワールド</label>
-              <input type="radio" id="root-local-space" name="root-coordinate-space" value="local" />
-              <label for="root-local-space">ローカル</label>
-            </div>
+
           </div>
           <div class="control-group">
             <label for="model-scale">スケール:</label>
@@ -171,13 +180,7 @@ async function main() {
               <input type="radio" id="bone-translate-mode" name="bone-mode" value="translate" />
               <label for="bone-translate-mode">移動</label>
             </div>
-            <div class="control-group">
-              <label>座標系:</label>
-              <input type="radio" id="bone-world-space" name="coordinate-space" value="world" checked />
-              <label for="bone-world-space">ワールド</label>
-              <input type="radio" id="bone-local-space" name="coordinate-space" value="local" />
-              <label for="bone-local-space">ローカル</label>
-            </div>
+
             <div id="selected-bone-info">
               <p>選択中ボーン: <span id="selected-bone-name">なし</span></p>
             </div>
@@ -252,7 +255,11 @@ async function main() {
   setupModelControlHandlers(vrmViewer);
   setupBoneControlHandlers(vrmViewer);
   setupKeyboardHandlers(vrmViewer);
+  setupToolbarHandlers(vrmViewer); // UI-001: ツールバー座標系切替
   setupModalHandlers(vrmViewer);
+  
+  // UI-001: ツールバーの初期状態を現在の座標系に同期
+  syncToolbarCoordinateSpace(vrmViewer);
   
   // イベントバスからのイベントを監視してUIを更新
   setupEventListeners(vrmViewer);
@@ -606,23 +613,7 @@ function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
     }
   });
 
-  // ルート座標系切り替え（ワールド・ローカル）
-  const rootWorldSpaceRadio = document.getElementById('root-world-space') as HTMLInputElement;
-  const rootLocalSpaceRadio = document.getElementById('root-local-space') as HTMLInputElement;
-  
-  rootWorldSpaceRadio?.addEventListener('change', () => {
-    if (rootWorldSpaceRadio.checked) {
-      vrmViewer.setRootTransformSpace('world');
-      console.log('ルート操作: ワールド座標系に変更');
-    }
-  });
-  
-  rootLocalSpaceRadio?.addEventListener('change', () => {
-    if (rootLocalSpaceRadio.checked) {
-      vrmViewer.setRootTransformSpace('local');
-      console.log('ルート操作: ローカル座標系に変更');
-    }
-  });
+
 }
 
 /**
@@ -633,8 +624,7 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
   const resetAllBonesBtn = document.getElementById('reset-all-bones') as HTMLButtonElement;
   const boneRotateModeRadio = document.getElementById('bone-rotate-mode') as HTMLInputElement;
   const boneTranslateModeRadio = document.getElementById('bone-translate-mode') as HTMLInputElement;
-  const boneWorldSpaceRadio = document.getElementById('bone-world-space') as HTMLInputElement;
-  const boneLocalSpaceRadio = document.getElementById('bone-local-space') as HTMLInputElement;
+
 
   toggleBoneVisibilityBtn?.addEventListener('click', () => {
     const visible = vrmViewer.toggleBoneVisibility();
@@ -688,20 +678,7 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
     }
   });
 
-  // 座標系選択のイベントハンドラー
-  boneWorldSpaceRadio?.addEventListener('change', () => {
-    if (boneWorldSpaceRadio.checked) {
-      vrmViewer.setBoneTransformSpace('world');
-      console.log('ワールド座標系に変更しました');
-    }
-  });
 
-  boneLocalSpaceRadio?.addEventListener('change', () => {
-    if (boneLocalSpaceRadio.checked) {
-      vrmViewer.setBoneTransformSpace('local');
-      console.log('ローカル座標系に変更しました');
-    }
-  });
 }
 
 /**
@@ -757,6 +734,50 @@ function setupKeyboardHandlers(vrmViewer: VRMViewerRefactored): void {
 /**
  * モーダル関連のイベントハンドラーを設定
  */
+/**
+ * UI-001: 上部ツールバーのプルダウンメニュー座標系切替イベントハンドラーを設定
+ */
+function setupToolbarHandlers(vrmViewer: VRMViewerRefactored): void {
+  const coordinateSpaceSelect = document.getElementById('coordinate-space-select') as HTMLSelectElement;
+
+  // プルダウンメニューの変更イベント
+  coordinateSpaceSelect?.addEventListener('change', (event) => {
+    const selectedValue = (event.target as HTMLSelectElement).value as 'world' | 'local';
+    
+    // ルート・ボーン両方の座標系を統一して更新
+    vrmViewer.setRootTransformSpace(selectedValue);
+    vrmViewer.setBoneTransformSpace(selectedValue);
+    
+    // 旧モーダル同期（現在は不要だが互換性のため残存）
+    syncModalCoordinateSpace(selectedValue);
+    
+    console.log(`ツールバー: 座標系を${selectedValue === 'world' ? 'Global' : 'Local'}に統一設定`);
+  });
+}
+
+/**
+ * UI-001: モーダル内の座標系表示が削除されたため、この関数は不要になりました
+ * ツールバーのみが座標系制御を行います
+ */
+function syncModalCoordinateSpace(space: 'world' | 'local'): void {
+  // モーダル内の座標系表示を削除したため、同期処理は不要
+  console.log(`座標系同期: ${space} (モーダル内表示は削除済み)`);
+}
+
+/**
+ * ツールバーのプルダウンメニューを現在の設定と同期
+ */
+function syncToolbarCoordinateSpace(vrmViewer: VRMViewerRefactored): void {
+  // 現在のルート座標系を取得（優先的に使用）
+  const currentSpace = vrmViewer.getRootTransformSpace();
+  
+  const coordinateSpaceSelect = document.getElementById('coordinate-space-select') as HTMLSelectElement;
+  
+  if (coordinateSpaceSelect) {
+    coordinateSpaceSelect.value = currentSpace;
+  }
+}
+
 function setupModalHandlers(_vrmViewer: VRMViewerRefactored): void {
   const openLoadModalBtn = document.getElementById('open-load-modal') as HTMLButtonElement;
   const modalCloseBtn = document.getElementById('modal-close') as HTMLSpanElement;
