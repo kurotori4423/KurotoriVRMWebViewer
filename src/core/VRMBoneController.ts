@@ -581,6 +581,21 @@ export class VRMBoneController {
     console.log('ボーンの視覚化を更新しました（BonePointsManager使用）');
   }
 
+  /**
+   * 毎フレーム更新メソッド（SpringBone対応）
+   * 
+   * SpringBoneによる揺れ・アニメーションに対応するため、
+   * 毎フレーム呼び出してボーン線位置を同期します。
+   * 
+   * @param _deltaTime 前フレームからの経過時間（秒）未使用だが将来の拡張用
+   */
+  public update(_deltaTime: number): void {
+    if (!this.currentVRM || !this.bonePointsVisible) return;
+
+    // BonePointsManagerで毎フレーム更新（SpringBone対応）
+    this.bonePointsManager.updateBoneLinePositions();
+  }
+
 
 
   /**

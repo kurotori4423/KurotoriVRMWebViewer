@@ -352,6 +352,8 @@ export class VRMViewerRefactored {
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
       
+      const deltaTime = 0.016; // 約60FPS想定 (1/60)
+      
       // コントロールの更新
       this.controls.update();
       
@@ -360,6 +362,9 @@ export class VRMViewerRefactored {
       
       // VRMモデルの更新処理
       this.updateVRMModels();
+      
+      // ボーン線の毎フレーム更新（SpringBone対応）
+      this.boneController.update(deltaTime);
       
       // レンダリング
       this.renderer.render(this.scene, this.camera);
