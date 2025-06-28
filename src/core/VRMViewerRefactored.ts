@@ -43,6 +43,10 @@ export class VRMViewerRefactored {
   private raycaster: THREE.Raycaster;
   private mouse: THREE.Vector2;
 
+  // カメラ自動フォーカス制御
+  private enableAutoFocus: boolean = true; // 自動フォーカス有効フラグ
+  private isFirstModelLoaded: boolean = false; // 最初のモデル読み込み済みフラグ
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
@@ -185,7 +189,14 @@ export class VRMViewerRefactored {
     eventBus.on('vrm:selected', ({ vrm }) => {
       this.boneController.setVRM(vrm);
       if (vrm) {
-        this.adjustCameraToModel(vrm);
+        // 自動フォーカス条件：有効フラグ && 最初のモデル読み込み時のみ
+        if (this.enableAutoFocus && !this.isFirstModelLoaded) {
+          this.adjustCameraToModel(vrm);
+          this.isFirstModelLoaded = true;
+          console.log('🎯 最初のモデルに自動フォーカスしました');
+        } else {
+          console.log('📹 カメラ自動フォーカスをスキップしました（複数体モデル対応）');
+        }
       }
     });
 
@@ -679,6 +690,9 @@ export class VRMViewerRefactored {
   removeAllVRMs(): void {
     this.vrmManager.removeAllModels();
     this.selectionManager.clearModelSelection();
+    // 全モデル削除時に最初のモデルフラグをリセット
+    this.isFirstModelLoaded = false;
+    console.log('🔄 全モデル削除により最初のモデルフラグをリセットしました');
   }
 
   getSelectedModelScale(): number {
@@ -786,6 +800,9 @@ export class VRMViewerRefactored {
 
   removeAllModels(): void {
     this.vrmManager.removeAllModels();
+    // 全モデル削除時に最初のモデルフラグをリセット
+    this.isFirstModelLoaded = false;
+    console.log('🔄 全モデル削除により最初のモデルフラグをリセットしました');
   }
 
   // LightController関連のメソッド
@@ -802,5 +819,30 @@ export class VRMViewerRefactored {
   enableDirectionalLightTransform(): void {
     // TODO: 実装  
     console.log('enableDirectionalLightTransform called');
+  }
+
+  /**
+   * カメラ自動フォーカス機能の有効/無効を設定
+   * @param enabled true: 有効, false: 無効
+   */
+  setAutoFocusEnabled(enabled: boolean): void {
+    this.enableAutoFocus = enabled;
+    console.log(`📹 カメラ自動フォーカス: ${enabled ? '有効' : '無効'}`);
+  }
+
+  /**
+   * カメラ自動フォーカス機能の状態を取得
+   * @returns true: 有効, false: 無効
+   */
+  getAutoFocusEnabled(): boolean {
+    return this.enableAutoFocus;
+  }
+
+  /**
+   * 最初のモデル読み込み状態をリセット（デバッグ用）
+   */
+  resetFirstModelFlag(): void {
+    this.isFirstModelLoaded = false;
+    console.log('🔄 最初のモデル読み込みフラグをリセットしました');
   }
 }
