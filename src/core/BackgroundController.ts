@@ -31,9 +31,9 @@ export class BackgroundController extends BaseManager {
   
   // グリッドヘルパー関連
   private gridHelper: THREE.GridHelper | null = null;
-  private gridVisible: boolean = false;
+  private gridVisible: boolean = true;
   private gridSettings: GridSettings = {
-    visible: false,
+    visible: true,
     size: 10,
     divisions: 10,
     colorCenterLine: '#888888',
