@@ -229,9 +229,9 @@ export class SelectionManager extends BaseManager {
     }
     
     // 三角錐マーカーを頭上に配置するための計算
-    const markerHeight = size.y * 0.15; // VRMの高さの15%をマーカーサイズとする
+    const markerHeight = 0.15; // 0.15をマーカーサイズとする
     const markerRadius = markerHeight * 0.8; // 高さの80%を底面半径とする
-    const offsetHeight = size.y * 0.6; // VRMの高さの60%上方に配置
+    const offsetHeight = size.y * 1.2; // VRMの高さの20%上方に配置
     
     // 三角錐ジオメトリ（下向き）を作成
     const markerGeometry = new THREE.ConeGeometry(markerRadius, markerHeight, 8);
@@ -250,7 +250,7 @@ export class SelectionManager extends BaseManager {
     this.selectionMarker.rotation.x = Math.PI;
     
     // 頭上の位置に配置
-    const markerPosition = adjustedCenter.clone();
+    const markerPosition = vrm.scene.position.clone();//adjustedCenter.clone();
     markerPosition.y += offsetHeight; // 上方に移動
     markerPosition.add(originalPosition);
     this.selectionMarker.position.copy(markerPosition);
