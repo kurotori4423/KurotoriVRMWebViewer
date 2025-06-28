@@ -4,7 +4,7 @@ WebGLベースで動作するVRMビューワーです。ブラウザ上でVRMモ
 
 ## 🌐 ライブデモ
 
-**本番環境**: https://your-username.github.io/KurotoriVRMWebViewer/
+**本番環境**: https://kurotori4423.github.io/KurotoriVRMWebViewer/
 
 *GitHub Pagesで自動デプロイされます。mainブランチへのpush時に自動更新されます。*
 
