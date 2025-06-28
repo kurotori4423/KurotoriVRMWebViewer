@@ -432,13 +432,51 @@ export class VRMBoneController {
   }
   
   /**
+   * 選択されたボーンが移動（translate）可能かどうかを判定
+   * 現在はHipsボーンのみが移動可能
+   * @returns true: 移動可能, false: 移動不可
+   */
+  isSelectedBoneTranslatable(): boolean {
+    if (!this.selectedBone || !this.currentVRM) {
+      return false;
+    }
+
+    // 選択されたボーンがHipsボーンかどうかを判定
+    const hipsNode = this.humanoidBones.get(VRMHumanBoneName.Hips);
+    
+    if (!hipsNode) {
+      console.warn('HipsボーンがVRMに見つかりません');
+      return false;
+    }
+
+    // 選択されたボーンがHipsと同じかどうかを確認
+    const isHips = this.selectedBone === hipsNode;
+    
+    console.log(`ボーン移動可能性判定: 選択ボーン=${this.selectedBone.name}, Hips=${hipsNode.name}, 移動可能=${isHips}`);
+    
+    return isHips;
+  }
+
+  /**
    * ボーン操作モードの切り替え（回転・移動）
+   * 移動モードはHipsボーンのみ許可
    */
   setTransformMode(mode: 'rotate' | 'translate'): void {
-    if (this.boneTransformControls) {
-      this.boneTransformControls.setMode(mode);
-      console.log(`Transformモードを変更: ${mode}`);
+    if (!this.boneTransformControls) {
+      console.warn('TransformControlsが初期化されていません');
+      return;
     }
+
+    // translateモードの場合、選択されたボーンがHipsかどうかを確認
+    if (mode === 'translate') {
+      if (!this.isSelectedBoneTranslatable()) {
+        console.warn('移動（translate）モードはHipsボーンでのみ使用できます。現在選択されているボーンでは移動操作はできません。');
+        return; // 無効な操作をブロック
+      }
+    }
+
+    this.boneTransformControls.setMode(mode);
+    console.log(`Transformモードを変更: ${mode}`);
   }
   
   /**

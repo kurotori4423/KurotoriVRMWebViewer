@@ -356,6 +356,14 @@ export class VRMViewerRefactored {
   }
 
   /**
+   * 現在選択されているボーンが移動可能かどうかを確認
+   * @returns true: 移動可能, false: 移動不可
+   */
+  isSelectedBoneTranslatable(): boolean {
+    return this.boneController.isSelectedBoneTranslatable();
+  }
+
+  /**
    * すべてのボーンをリセット
    */
   resetAllBonePoses(): void {

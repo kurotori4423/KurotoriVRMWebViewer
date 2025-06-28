@@ -559,7 +559,38 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
 
   boneTranslateModeRadio?.addEventListener('change', () => {
     if (boneTranslateModeRadio.checked) {
+      // 移動モードに切り替えを試行
+      const wasTranslatable = vrmViewer.isSelectedBoneTranslatable();
+      
+      // モード切り替えを実行
       vrmViewer.setBoneTransformMode('translate');
+      
+      // 制限された場合のフィードバック
+      if (!wasTranslatable) {
+        // UIを回転モードに戻す
+        const boneRotateModeRadio = document.getElementById('bone-rotate-mode') as HTMLInputElement;
+        if (boneRotateModeRadio) {
+          boneRotateModeRadio.checked = true;
+          boneTranslateModeRadio.checked = false;
+        }
+        
+        // ユーザーへの通知
+        console.warn('移動モードはHipsボーンでのみ使用できます。');
+        
+        // 視覚的フィードバック（簡易的な通知）
+        const selectedBoneNameSpan = document.getElementById('selected-bone-name') as HTMLSpanElement;
+        if (selectedBoneNameSpan) {
+          const originalText = selectedBoneNameSpan.textContent;
+          selectedBoneNameSpan.style.color = 'red';
+          selectedBoneNameSpan.textContent = '移動不可（Hipsのみ移動可能）';
+          
+          // 3秒後に元に戻す
+          setTimeout(() => {
+            selectedBoneNameSpan.style.color = '';
+            selectedBoneNameSpan.textContent = originalText;
+          }, 3000);
+        }
+      }
     }
   });
 }
