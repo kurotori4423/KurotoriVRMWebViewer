@@ -1866,10 +1866,13 @@ h3 {
 
 /* 表情スライダーグループ */
 .expression-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px 12px;
   backdrop-filter: blur(5px);
   transition: all 0.2s ease;
 }
@@ -1894,54 +1897,24 @@ h3 {
   }
 }
 
-/* 表情ヘッダー */
-.expression-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
 /* 表情ラベル */
 .expression-label {
   font-weight: 500;
-  font-size: 0.9em;
+  font-size: 0.85em;
   color: #333;
   margin: 0;
   padding: 0;
-  min-width: 0;
-  flex: 1;
+  min-width: 80px;
+  flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-transform: capitalize;
 }
 
 @media (prefers-color-scheme: dark) {
   .expression-label {
     color: #ffffff;
-  }
-}
-
-/* 表情値表示 */
-.expression-value {
-  font-family: 'Courier New', monospace;
-  font-size: 0.85em;
-  color: #0056b3;
-  background: rgba(0, 123, 255, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 123, 255, 0.2);
-  min-width: 48px;
-  text-align: center;
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .expression-value {
-    color: #87ceeb;
-    background: rgba(100, 150, 255, 0.15);
-    border: 1px solid rgba(100, 150, 255, 0.25);
   }
 }
 
@@ -2047,32 +2020,29 @@ h3 {
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .expression-slider-group {
-    padding: 10px;
-  }
-  
-  .expression-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  
-  .expression-value {
-    margin-left: 0;
-    align-self: flex-end;
+    padding: 8px 10px;
+    gap: 8px;
   }
   
   .expression-label {
-    font-size: 0.85em;
+    font-size: 0.8em;
+    min-width: 70px;
   }
 }
 
 @media (max-width: 480px) {
   .expression-controls {
-    gap: 8px;
+    gap: 6px;
   }
   
   .expression-slider-group {
-    padding: 8px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  
+  .expression-label {
+    font-size: 0.75em;
+    min-width: 60px;
   }
   
   .expression-slider {

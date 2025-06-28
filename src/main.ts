@@ -1243,10 +1243,7 @@ function createExpressionSlider(expressionName: string, vrmViewer: VRMViewerRefa
   const currentValue = expressionController.getExpression(expressionName) || 0;
 
   sliderGroup.innerHTML = `
-    <div class="expression-header">
-      <label class="expression-label">${expressionName}</label>
-      <span class="expression-value">${currentValue.toFixed(2)}</span>
-    </div>
+    <label class="expression-label">${expressionName}</label>
     <input 
       type="range" 
       class="expression-slider" 
@@ -1260,12 +1257,10 @@ function createExpressionSlider(expressionName: string, vrmViewer: VRMViewerRefa
 
   // スライダーイベントリスナー設定
   const slider = sliderGroup.querySelector('.expression-slider') as HTMLInputElement;
-  const valueDisplay = sliderGroup.querySelector('.expression-value') as HTMLSpanElement;
 
-  if (slider && valueDisplay) {
+  if (slider) {
     slider.addEventListener('input', () => {
       const value = parseFloat(slider.value);
-      valueDisplay.textContent = value.toFixed(2);
       
       // リアルタイム表情更新
       expressionController.setExpression(expressionName, value);
