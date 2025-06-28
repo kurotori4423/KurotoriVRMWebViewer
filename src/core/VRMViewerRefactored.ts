@@ -178,8 +178,8 @@ export class VRMViewerRefactored {
     // ウィンドウリサイズ
     window.addEventListener('resize', this.onWindowResize.bind(this));
     
-    // マウスクリック（選択処理）
-    this.canvas.addEventListener('click', this.onCanvasClick.bind(this));
+    // マウスダウン（選択処理） - clickではなくmousedownで判定
+    this.canvas.addEventListener('mousedown', this.onCanvasMouseDown.bind(this));
 
     // VRMローデッドイベント - ボーンコントローラーにVRMを設定
     eventBus.on('vrm:selected', ({ vrm }) => {
@@ -298,9 +298,16 @@ export class VRMViewerRefactored {
   }
 
   /**
-   * キャンバスクリック処理
+   * キャンバスマウスダウン処理（選択処理）
+   * TransformControlsのドラッグ誤爆を防ぐためmousedownイベントで判定
    */
-  private onCanvasClick(event: MouseEvent): void {
+  private onCanvasMouseDown(event: MouseEvent): void {
+    // TransformControlsのドラッグ中は選択処理をスキップ
+    if (this.boneController.isDragging()) {
+      console.log('TransformControlsドラッグ中につき選択処理をスキップ');
+      return;
+    }
+
     // マウス座標を正規化（キャンバスの実際のサイズに基づく）
     const rect = this.canvas.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -766,7 +773,7 @@ export class VRMViewerRefactored {
     
     // イベントリスナーの削除
     window.removeEventListener('resize', this.onWindowResize.bind(this));
-    this.canvas.removeEventListener('click', this.onCanvasClick.bind(this));
+    this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown.bind(this));
     
     // EventBusのクリーンアップ
     eventBus.clear();
