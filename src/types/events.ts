@@ -17,6 +17,12 @@ export interface VRMSelectedEvent {
   index: number;
 }
 
+export interface VRMRootTransformChangedEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  position: import('three').Vector3;
+  rotation: import('three').Euler;
+}
+
 // ボーン関連イベント
 export interface BoneSelectedEvent {
   boneName: string | null;
@@ -81,6 +87,7 @@ export interface EventMap {
   'vrm:removed': VRMRemovedEvent;
   'vrm:selected': VRMSelectedEvent;
   'vrm:selection-cleared': void;
+  'vrm-root-transform-changed': VRMRootTransformChangedEvent;
   
   // Bone Events
   'bone:selected': BoneSelectedEvent;

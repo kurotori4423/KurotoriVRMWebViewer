@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { eventBus } from '../utils/EventBus';
 
 /**
  * VRMBoneController
@@ -17,7 +18,6 @@ export class VRMBoneController {
   private currentVRM: VRM | null = null;
   
   // ボーン操作用
-  private skeletonHelper: THREE.SkeletonHelper | null = null;
   private customBoneLines: THREE.LineSegments | null = null;
   private bonePoints: THREE.Mesh[] = [];
   private bonePointsVisible: boolean = true;
@@ -51,6 +51,9 @@ export class VRMBoneController {
     
     // TransformControlsの初期化
     this.initializeTransformControls();
+    
+    // VRMルートオブジェクト変更イベントの監視
+    this.setupRootTransformListener();
   }
 
   /**
@@ -75,6 +78,37 @@ export class VRMBoneController {
     this.boneTransformControls.addEventListener('objectChange', () => {
       this.updateBoneVisualizationAndVRM();
     });
+  }
+
+  /**
+   * VRMルートオブジェクト変更イベントの監視を設定
+   */
+  private setupRootTransformListener(): void {
+    eventBus.on('vrm-root-transform-changed', (event) => {
+      if (event.vrm === this.currentVRM) {
+        // VRMルートオブジェクトが変更されたときにボーン表示を更新
+        this.updateBoneVisualizationPosition();
+      }
+    });
+  }
+
+  /**
+   * ボーン表示要素の位置を更新（VRMルートオブジェクト変更時）
+   */
+  private updateBoneVisualizationPosition(): void {
+    if (!this.currentVRM || !this.currentVRM.scene) return;
+
+    // CustomBoneLinesをVRMシーンの子として再配置
+    if (this.customBoneLines && this.customBoneLines.parent === this.scene) {
+      this.scene.remove(this.customBoneLines);
+      this.currentVRM.scene.add(this.customBoneLines);
+      console.log('CustomBoneLinesをVRMシーンに移動しました');
+    }
+
+    // BonePointsは既にボーンの子として追加されているので、
+    // VRMルートオブジェクトの変更に自動的に追従する
+
+    console.log('VRMBoneController: ボーン表示要素の位置を更新しました');
   }
 
   /**
@@ -136,7 +170,7 @@ export class VRMBoneController {
     
     console.log('ボーン構造を視覚化...');
     
-    // SkeletonHelperの作成
+    // CustomBoneLinesの作成
     // VRMのシーンからスキンメッシュを検索
     let skinnedMesh: THREE.SkinnedMesh | null = null;
     this.currentVRM.scene.traverse((object) => {
@@ -150,104 +184,10 @@ export class VRMBoneController {
     });
     
     if (skinnedMesh && (skinnedMesh as THREE.SkinnedMesh).skeleton) {
-      console.log('SkeletonHelper作成開始...');
-      
-      // 方法1: スケルトンから直接作成を試行
-      try {
-        this.skeletonHelper = new THREE.SkeletonHelper(skinnedMesh as THREE.SkinnedMesh);
-        console.log('方法1 SkeletonHelper作成完了:', this.skeletonHelper);
-        console.log('方法1 geometry position count:', this.skeletonHelper.geometry.attributes.position?.count);
-        
-        // もしposition countが0の場合、手動でSkeletonHelperを作成
-        if (!this.skeletonHelper.geometry.attributes.position || 
-            this.skeletonHelper.geometry.attributes.position.count === 0) {
-          console.log('方法1が失敗、方法2で手動作成を試行...');
-          
-          // 方法2: VRMの正規化ヒューマノイドルートから作成
-          const humanoid = this.currentVRM!.humanoid;
-          const normalizedRoot = humanoid.normalizedHumanBonesRoot;
-          console.log('正規化ヒューマノイドルート:', normalizedRoot);
-          console.log('正規化ヒューマノイドルート子要素数:', normalizedRoot.children.length);
-          
-          if (normalizedRoot) {
-            this.skeletonHelper = new THREE.SkeletonHelper(normalizedRoot);
-            console.log('方法2 SkeletonHelper作成完了（VRM正規化ルートから）:', this.skeletonHelper);
-            console.log('方法2 geometry position count:', this.skeletonHelper.geometry.attributes.position?.count);
-            
-            // まだ少ない場合は、スケルトンの全ボーンから作成を試行
-            if (this.skeletonHelper.geometry.attributes.position.count < 50) {
-              console.log('方法3: スケルトンルートボーンから作成を試行...');
-              const rootBone = (skinnedMesh as THREE.SkinnedMesh).skeleton.bones[0];
-              if (rootBone) {
-                this.skeletonHelper = new THREE.SkeletonHelper(rootBone);
-                console.log('方法3 SkeletonHelper作成完了（スケルトンルートから）:', this.skeletonHelper);
-                console.log('方法3 geometry position count:', this.skeletonHelper.geometry.attributes.position?.count);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('SkeletonHelper作成エラー:', error);
-        this.skeletonHelper = null;
-      }
-      
-      if (this.skeletonHelper) {
-        console.log('SkeletonHelper geometry:', this.skeletonHelper.geometry);
-        console.log('SkeletonHelper geometry attributes:', this.skeletonHelper.geometry.attributes);
-        console.log('SkeletonHelper geometry position count:', this.skeletonHelper.geometry.attributes.position?.count);
-        console.log('SkeletonHelper material:', this.skeletonHelper.material);
-        
-        // SkeletonHelperのマテリアルを最前面表示に設定
-        const skeletonMaterial = (this.skeletonHelper as any).material as THREE.LineBasicMaterial;
-        console.log('SkeletonHelper material before config:', {
-          color: skeletonMaterial.color.getHex(),
-          opacity: skeletonMaterial.opacity,
-          transparent: skeletonMaterial.transparent,
-          visible: skeletonMaterial.visible,
-          depthTest: skeletonMaterial.depthTest,
-          depthWrite: skeletonMaterial.depthWrite,
-          linewidth: skeletonMaterial.linewidth
-        });
-        
-        skeletonMaterial.linewidth = 5; // 線の太さをさらに太く設定
-        skeletonMaterial.depthTest = false; // 深度テストを無効にして最前面表示
-        skeletonMaterial.depthWrite = false; // 深度バッファへの書き込みを無効
-        skeletonMaterial.transparent = true;
-        skeletonMaterial.opacity = 1.0; // 完全不透明に設定
-        skeletonMaterial.color.set(0xffff00); // 黄色で視認性向上
-        skeletonMaterial.needsUpdate = true; // マテリアル更新フラグ
-        
-        console.log('SkeletonHelper material設定後:', skeletonMaterial);
-        console.log('SkeletonHelper material after config:', {
-          color: skeletonMaterial.color.getHex(),
-          opacity: skeletonMaterial.opacity,
-          transparent: skeletonMaterial.transparent,
-          visible: skeletonMaterial.visible,
-          depthTest: skeletonMaterial.depthTest,
-          depthWrite: skeletonMaterial.depthWrite,
-          linewidth: skeletonMaterial.linewidth
-        });
-        
-        // 最前面表示のため描画順序を最大値に設定
-        this.skeletonHelper.renderOrder = Number.MAX_SAFE_INTEGER - 1;
-        this.skeletonHelper.visible = this.bonePointsVisible;
-        this.scene.add(this.skeletonHelper);
-        
-        console.log('SkeletonHelperをシーンに追加完了 - visible:', this.skeletonHelper.visible);
-        console.log('SkeletonHelper位置:', this.skeletonHelper.position);
-        console.log('SkeletonHelper回転:', this.skeletonHelper.rotation);
-        console.log('SkeletonHelperスケール:', this.skeletonHelper.scale);
-        console.log('SkeletonHelper renderOrder:', this.skeletonHelper.renderOrder);
-        console.log('SkeletonHelper frustumCulled:', this.skeletonHelper.frustumCulled);
-        console.log('SkeletonHelperを追加しました（最前面表示設定済み）');
-        
-        // カスタムボーン線を作成（SkeletonHelperが不完全な場合の補完）
-        this.createCustomBoneLines(skinnedMesh as THREE.SkinnedMesh);
-      } else {
-        console.error('SkeletonHelper作成に完全に失敗しました');
-      }
+      // カスタムボーン線を作成
+      this.createCustomBoneLines(skinnedMesh as THREE.SkinnedMesh);
     } else {
-      console.error('SkeletonHelper作成失敗: スキンメッシュまたはスケルトンが見つかりません');
+      console.error('CustomBoneLines作成失敗: スキンメッシュまたはスケルトンが見つかりません');
     }
     
     // 主要ボーンに球体を配置して視認性を高める
@@ -296,7 +236,7 @@ export class VRMBoneController {
         const sphere = new THREE.Mesh(sphereGeometry, material);
         
         // 最前面に表示するための設定
-        sphere.renderOrder = Number.MAX_SAFE_INTEGER; // SkeletonHelperより前面に表示
+        sphere.renderOrder = Number.MAX_SAFE_INTEGER; // CustomBoneLinesより前面に表示
         
         // ボーンの位置に配置
         sphere.position.set(0, 0, 0);
@@ -322,12 +262,6 @@ export class VRMBoneController {
    * ボーン視覚化要素をクリア
    */
   private clearBoneVisualization(): void {
-    // スケルトンヘルパーの削除
-    if (this.skeletonHelper) {
-      this.scene.remove(this.skeletonHelper);
-      this.skeletonHelper = null;
-    }
-    
     // カスタムボーン線の削除
     if (this.customBoneLines) {
       this.scene.remove(this.customBoneLines);
@@ -420,11 +354,6 @@ export class VRMBoneController {
   toggleBoneVisibility(visible?: boolean): boolean {
     // 引数が指定されていれば、その値に設定。指定がなければ現在の値を反転
     this.bonePointsVisible = visible !== undefined ? visible : !this.bonePointsVisible;
-    
-    // スケルトンヘルパーの表示状態を更新
-    if (this.skeletonHelper) {
-      this.skeletonHelper.visible = this.bonePointsVisible;
-    }
     
     // カスタムボーン線の表示状態を更新
     if (this.customBoneLines) {
@@ -644,11 +573,6 @@ export class VRMBoneController {
     // カスタムボーン線の位置を更新
     this.updateCustomBoneLines();
 
-    // SkeletonHelperの更新
-    if (this.skeletonHelper) {
-      this.skeletonHelper.geometry.attributes.position.needsUpdate = true;
-    }
-
     // VRMの更新処理を実行（アニメーションループで実行されるため、ここでは不要）
     // if (this.currentVRM.update) {
     //   this.currentVRM.update(0);
@@ -719,7 +643,7 @@ export class VRMBoneController {
   }
 
   /**
-   * カスタムボーン線を作成（SkeletonHelperが不完全な場合の補完）
+   * カスタムボーン線を作成（ボーン構造の視覚化）
    */
   private createCustomBoneLines(skinnedMesh: THREE.SkinnedMesh): void {
     if (!skinnedMesh.skeleton) return;

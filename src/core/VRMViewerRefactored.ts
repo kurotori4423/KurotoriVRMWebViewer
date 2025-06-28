@@ -16,6 +16,7 @@ import { LightController } from './LightController';
 import { SelectionManager } from './SelectionManager';
 import { BackgroundController } from './BackgroundController';
 import { VRMBoneController } from './VRMBoneController';
+import { VRMRootController } from './VRMRootController';
 
 // Event System
 import { eventBus } from '../utils/EventBus';
@@ -38,6 +39,7 @@ export class VRMViewerRefactored {
   private selectionManager: SelectionManager;
   private backgroundController: BackgroundController;
   private boneController: VRMBoneController;
+  private rootController: VRMRootController;
 
   // Raycast for interaction
   private raycaster: THREE.Raycaster;
@@ -67,6 +69,7 @@ export class VRMViewerRefactored {
     this.selectionManager = new SelectionManager(this.scene);
     this.backgroundController = new BackgroundController(this.scene);
     this.boneController = new VRMBoneController(this.scene, this.camera, this.renderer, this.controls);
+    this.rootController = new VRMRootController(this.scene, this.camera, this.renderer, this.controls);
   }
 
   /**
@@ -84,6 +87,7 @@ export class VRMViewerRefactored {
     await this.lightController.initialize();
     await this.selectionManager.initialize();
     await this.backgroundController.initialize();
+    this.rootController.initialize();
 
     this.startRenderLoop();
     
@@ -188,6 +192,7 @@ export class VRMViewerRefactored {
     // VRMローデッドイベント - ボーンコントローラーにVRMを設定
     eventBus.on('vrm:selected', ({ vrm }) => {
       this.boneController.setVRM(vrm);
+      this.rootController.setVRM(vrm);
       if (vrm) {
         // 自動フォーカス条件：有効フラグ && 最初のモデル読み込み時のみ
         if (this.enableAutoFocus && !this.isFirstModelLoaded) {
@@ -203,6 +208,7 @@ export class VRMViewerRefactored {
     // VRM選択解除時
     eventBus.on('vrm:selection-cleared', () => {
       this.boneController.setVRM(null);
+      this.rootController.setVRM(null);
     });
   }
 
@@ -639,6 +645,70 @@ export class VRMViewerRefactored {
     }
   }
 
+  /**
+   * VRMモデルをリセット（位置・回転を初期状態に戻す）
+   */
+  resetModel(): void {
+    this.rootController.resetVRM();
+    console.log('モデルをリセットしました（位置・回転を初期状態に復帰）');
+  }
+
+  /**
+   * VRMルートオブジェクト操作を有効化
+   */
+  enableRootTransform(): void {
+    this.rootController.enableRootTransform();
+  }
+
+  /**
+   * VRMルートオブジェクト操作を無効化
+   */
+  disableRootTransform(): void {
+    this.rootController.disableRootTransform();
+  }
+
+  /**
+   * VRMルートオブジェクト操作の切り替え
+   */
+  toggleRootTransform(): boolean {
+    return this.rootController.toggleRootTransform();
+  }
+
+  /**
+   * VRMルートオブジェクトのTransformモードを設定
+   */
+  setRootTransformMode(mode: 'translate' | 'rotate'): void {
+    this.rootController.setTransformMode(mode);
+  }
+
+  /**
+   * VRMルートオブジェクトのTransform座標系を設定
+   */
+  setRootTransformSpace(space: 'world' | 'local'): void {
+    this.rootController.setTransformSpace(space);
+  }
+
+  /**
+   * VRMルートオブジェクトの現在のTransformモードを取得
+   */
+  getRootTransformMode(): 'translate' | 'rotate' {
+    return this.rootController.getCurrentTransformMode();
+  }
+
+  /**
+   * VRMルートオブジェクトの現在のTransform座標系を取得
+   */
+  getRootTransformSpace(): 'world' | 'local' {
+    return this.rootController.getCurrentTransformSpace();
+  }
+
+  /**
+   * VRMルートオブジェクトのTransformControls表示状態を取得
+   */
+  isRootTransformVisible(): boolean {
+    return this.rootController.isRootTransformControlsVisible();
+  }
+
   setModelScale(scale: number): void {
     const selectedModel = this.selectionManager.getSelectedModel();
     if (selectedModel && selectedModel.scene) {
@@ -781,6 +851,7 @@ export class VRMViewerRefactored {
     this.selectionManager.dispose();
     this.backgroundController.dispose();
     this.boneController.dispose();
+    this.rootController.dispose();
     
     // レンダラーのクリーンアップ
     this.renderer.dispose();

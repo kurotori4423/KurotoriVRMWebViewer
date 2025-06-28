@@ -118,8 +118,27 @@ async function main() {
             <p>選択中: <span id="selected-model-name">なし</span></p>
           </div>
           <div class="control-group">
-            <button id="center-model" class="control-btn">中央寄せ</button>
+            <button id="reset-model" class="control-btn">リセット</button>
             <button id="focus-model" class="control-btn">フォーカス</button>
+          </div>
+          <div class="control-group">
+            <button id="toggle-root-transform" class="control-btn">ルート操作モード</button>
+          </div>
+          <!-- ルート操作設定（ルート操作モード時のみ表示） -->
+          <div id="root-transform-settings" class="control-group" style="display: none;">
+            <div class="radio-group">
+              <input type="radio" id="root-translate-mode" name="root-mode" value="translate" checked />
+              <label for="root-translate-mode">移動</label>
+              <input type="radio" id="root-rotate-mode" name="root-mode" value="rotate" />
+              <label for="root-rotate-mode">回転</label>
+            </div>
+            <div class="radio-group">
+              <label>座標系:</label>
+              <input type="radio" id="root-world-space" name="root-coordinate-space" value="world" checked />
+              <label for="root-world-space">ワールド</label>
+              <input type="radio" id="root-local-space" name="root-coordinate-space" value="local" />
+              <label for="root-local-space">ローカル</label>
+            </div>
           </div>
           <div class="control-group">
             <label for="model-scale">スケール:</label>
@@ -506,7 +525,7 @@ function setupBackgroundHandlers(vrmViewer: VRMViewerRefactored): void {
  * モデル制御関連のイベントハンドラーを設定
  */
 function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
-  const centerModelBtn = document.getElementById('center-model') as HTMLButtonElement;
+  const resetModelBtn = document.getElementById('reset-model') as HTMLButtonElement;
   const focusModelBtn = document.getElementById('focus-model') as HTMLButtonElement;
   const modelScaleSlider = document.getElementById('model-scale') as HTMLInputElement;
   const scaleValueSpan = document.getElementById('scale-value') as HTMLSpanElement;
@@ -515,8 +534,8 @@ function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
   const deleteSelectedModelBtn = document.getElementById('delete-selected-model') as HTMLButtonElement;
   const deleteAllModelsBtn = document.getElementById('delete-all-models') as HTMLButtonElement;
 
-  centerModelBtn?.addEventListener('click', () => {
-    vrmViewer.centerModel();
+  resetModelBtn?.addEventListener('click', () => {
+    vrmViewer.resetModel();
   });
 
   focusModelBtn?.addEventListener('click', () => {
@@ -552,6 +571,56 @@ function setupModelControlHandlers(vrmViewer: VRMViewerRefactored): void {
   deleteAllModelsBtn?.addEventListener('click', () => {
     if (confirm('全てのVRMモデルを削除しますか？')) {
       vrmViewer.removeAllVRMs();
+    }
+  });
+
+  // VRMルートTransformControls切り替えボタン
+  const toggleRootTransformBtn = document.getElementById('toggle-root-transform') as HTMLButtonElement;
+  const rootTransformSettings = document.getElementById('root-transform-settings') as HTMLDivElement;
+  
+  toggleRootTransformBtn?.addEventListener('click', () => {
+    const isVisible = vrmViewer.toggleRootTransform();
+    toggleRootTransformBtn.textContent = isVisible ? 'ルート操作終了' : 'ルート操作モード';
+    
+    // ルート操作設定の表示/非表示を切り替え
+    if (rootTransformSettings) {
+      rootTransformSettings.style.display = isVisible ? 'block' : 'none';
+    }
+  });
+
+  // ルート操作モード切り替え（移動・回転）
+  const rootTranslateModeRadio = document.getElementById('root-translate-mode') as HTMLInputElement;
+  const rootRotateModeRadio = document.getElementById('root-rotate-mode') as HTMLInputElement;
+  
+  rootTranslateModeRadio?.addEventListener('change', () => {
+    if (rootTranslateModeRadio.checked) {
+      vrmViewer.setRootTransformMode('translate');
+      console.log('ルート操作: 移動モードに変更');
+    }
+  });
+  
+  rootRotateModeRadio?.addEventListener('change', () => {
+    if (rootRotateModeRadio.checked) {
+      vrmViewer.setRootTransformMode('rotate');
+      console.log('ルート操作: 回転モードに変更');
+    }
+  });
+
+  // ルート座標系切り替え（ワールド・ローカル）
+  const rootWorldSpaceRadio = document.getElementById('root-world-space') as HTMLInputElement;
+  const rootLocalSpaceRadio = document.getElementById('root-local-space') as HTMLInputElement;
+  
+  rootWorldSpaceRadio?.addEventListener('change', () => {
+    if (rootWorldSpaceRadio.checked) {
+      vrmViewer.setRootTransformSpace('world');
+      console.log('ルート操作: ワールド座標系に変更');
+    }
+  });
+  
+  rootLocalSpaceRadio?.addEventListener('change', () => {
+    if (rootLocalSpaceRadio.checked) {
+      vrmViewer.setRootTransformSpace('local');
+      console.log('ルート操作: ローカル座標系に変更');
     }
   });
 }
