@@ -1273,6 +1273,7 @@ function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
     updateSelectedModelControls(vrmViewer);
     updateExpressionControls(vrmViewer, -1, null); // FEAT-011: 表情制御UI更新
     updateVRMAUI(vrmViewer); // FEAT-013: VRMA UI更新
+    updateVRMCount(vrmViewer); // 追加: VRM数の更新
   });
 
   // 選択解除時の処理
