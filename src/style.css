@@ -1904,12 +1904,13 @@ h3 {
   color: #333;
   margin: 0;
   padding: 0;
-  min-width: 80px;
+  width: 90px;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-transform: capitalize;
+  text-align: left;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1920,7 +1921,7 @@ h3 {
 
 /* 表情スライダー */
 .expression-slider {
-  width: 100%;
+  flex: 1;
   height: 6px;
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.1);
@@ -2026,7 +2027,7 @@ h3 {
   
   .expression-label {
     font-size: 0.8em;
-    min-width: 70px;
+    width: 75px;
   }
 }
 
@@ -2042,7 +2043,7 @@ h3 {
   
   .expression-label {
     font-size: 0.75em;
-    min-width: 60px;
+    width: 65px;
   }
   
   .expression-slider {
