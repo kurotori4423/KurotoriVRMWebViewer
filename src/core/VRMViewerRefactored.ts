@@ -83,6 +83,11 @@ export class VRMViewerRefactored {
 
     this.startRenderLoop();
     
+    // 初期化完了後に強制的にサイズ更新
+    setTimeout(() => {
+      this.updateCanvasSizeImproved();
+    }, 100);
+    
     console.log('VRMビューワーの初期化が完了しました');
   }
 
@@ -105,35 +110,22 @@ export class VRMViewerRefactored {
   }
 
   /**
-   * 信頼性の高いキャンバスサイズ取得
+   * 信頼性の高いキャンバスサイズ取得（ビューポート全体使用）
    */
   private getCanvasSize(): { width: number; height: number } {
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const parentElement = this.canvas.parentElement;
-    
-    let width = 0;
-    let height = 0;
+    // キャンバスはposition: fixed + 100vw/100vhなので、
+    // 常にビューポートサイズと一致するべき
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    // 1. getBoundingClientRect()を優先
-    if (canvasRect.width > 0 && canvasRect.height > 0) {
-      width = canvasRect.width;
-      height = canvasRect.height;
-    }
-    // 2. 親要素のサイズを使用
-    else if (parentElement) {
-      const parentRect = parentElement.getBoundingClientRect();
-      if (parentRect.width > 0 && parentRect.height > 0) {
-        width = parentRect.width;
-        height = parentRect.height;
-      }
-    }
-    // 3. ウィンドウサイズにフォールバック
-    if (width <= 0 || height <= 0) {
-      width = window.innerWidth;
-      height = window.innerHeight;
-    }
+    // 念のため、最小サイズ制限を設ける
+    const minWidth = 320;
+    const minHeight = 240;
 
-    return { width, height };
+    return { 
+      width: Math.max(width, minWidth), 
+      height: Math.max(height, minHeight) 
+    };
   }
 
   /**
