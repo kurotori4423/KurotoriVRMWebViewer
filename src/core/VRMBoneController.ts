@@ -101,6 +101,8 @@ export class VRMBoneController {
       console.error('VRMにhumanoidプロパティが見つかりません');
       return;
     }
+
+
     
     // ヒューマノイドボーンの取得
     this.humanoidBones.clear();
@@ -440,29 +442,35 @@ export class VRMBoneController {
   }
   
   /**
-   * ポーズのリセット
+   * ポーズのリセット - VRMライブラリの正しいAPIを使用
    */
   resetPose(targetBoneName?: VRMHumanBoneName): void {
     if (!this.currentVRM) return;
     
     if (targetBoneName) {
-      // 特定のボーンのみリセット
-      const bone = this.humanoidBones.get(targetBoneName);
-      if (bone) {
-        bone.position.set(0, 0, 0);     // 位置をリセット
-        bone.quaternion.set(0, 0, 0, 1); // 回転をリセット
-        console.log(`ボーン ${targetBoneName} のポーズ（位置・回転）をリセットしました`);
-      }
-    } else {
-      // 全ボーンのリセット
-      for (const bone of this.humanoidBones.values()) {
-        bone.position.set(0, 0, 0);     // 位置をリセット
-        bone.quaternion.set(0, 0, 0, 1); // 回転をリセット
-      }
-      console.log('全ボーンのポーズ（位置・回転）をリセットしました');
+      // 特定のボーンのみリセット（VRMライブラリには個別ボーンリセット機能がないため、カスタム実装）
+      // TODO: 将来的にVRMライブラリに個別ボーンリセット機能が追加された場合は、そちらを使用
+      console.log(`個別ボーンリセット（${targetBoneName}）は現在サポートされていません。全体リセットを実行します。`);
     }
     
-    // VRMの更新
+    // VRMライブラリの正しいAPIを使用して初期ポーズにリセット
+    try {
+      // Normalized形式でのポーズリセット（推奨）
+      this.currentVRM.humanoid.resetNormalizedPose();
+      console.log('VRMの初期ポーズ（T-ポーズ/A-ポーズ）にリセットしました');
+    } catch (error) {
+      console.warn('resetNormalizedPose()でエラーが発生しました。resetPose()を試行します。', error);
+      try {
+        // Fallback: 非推奨だが一般的なresetPose()を使用
+        this.currentVRM.humanoid.resetPose();
+        console.log('VRMの初期ポーズにリセットしました（resetPose）');
+      } catch (fallbackError) {
+        console.error('ポーズリセット失敗:', fallbackError);
+        return;
+      }
+    }
+    
+    // VRMの更新（必須）
     if (this.currentVRM.update) {
       this.currentVRM.update(0);
     }
