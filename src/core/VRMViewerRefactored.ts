@@ -90,12 +90,12 @@ export class VRMViewerRefactored {
    * レンダラーの設定
    */
   private setupRenderer(): void {
-    // キャンバスの実際のサイズを取得（フォールバック付き）
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
-    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+    // 初期サイズの取得
+    const { width, height } = this.getCanvasSize();
     
-    this.renderer.setSize(width, height);
+    console.log(`🎨 Renderer initialization: ${width}x${height}`);
+    
+    this.renderer.setSize(width, height, true); // CSS更新も行う
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -105,13 +105,43 @@ export class VRMViewerRefactored {
   }
 
   /**
+   * 信頼性の高いキャンバスサイズ取得
+   */
+  private getCanvasSize(): { width: number; height: number } {
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const parentElement = this.canvas.parentElement;
+    
+    let width = 0;
+    let height = 0;
+
+    // 1. getBoundingClientRect()を優先
+    if (canvasRect.width > 0 && canvasRect.height > 0) {
+      width = canvasRect.width;
+      height = canvasRect.height;
+    }
+    // 2. 親要素のサイズを使用
+    else if (parentElement) {
+      const parentRect = parentElement.getBoundingClientRect();
+      if (parentRect.width > 0 && parentRect.height > 0) {
+        width = parentRect.width;
+        height = parentRect.height;
+      }
+    }
+    // 3. ウィンドウサイズにフォールバック
+    if (width <= 0 || height <= 0) {
+      width = window.innerWidth;
+      height = window.innerHeight;
+    }
+
+    return { width, height };
+  }
+
+  /**
    * カメラの設定
    */
   private setupCamera(): void {
-    // キャンバスの実際のサイズを取得（フォールバック付き）
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
-    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
+    // 初期サイズの取得
+    const { width, height } = this.getCanvasSize();
     
     this.camera.fov = 75;
     this.camera.aspect = width / height;
@@ -119,6 +149,8 @@ export class VRMViewerRefactored {
     this.camera.far = 1000;
     this.camera.position.set(0, 1.5, 3);
     this.camera.updateProjectionMatrix();
+    
+    console.log(`📷 Camera initialization: aspect=${(width/height).toFixed(2)} (${width}x${height})`);
   }
 
   /**
@@ -172,18 +204,105 @@ export class VRMViewerRefactored {
   }
 
   /**
-   * ウィンドウリサイズ処理
+   * リサイズのデバウンス用タイマー
+   */
+  private resizeTimeout: number | null = null;
+
+  /**
+   * ウィンドウリサイズ処理（デバウンス処理付き）
    */
   private onWindowResize(): void {
-    // キャンバスの実際のサイズを取得（フォールバック付き）
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
-    const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
-    
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
-    this.viewportGizmo.update();
+    // 既存のタイマーをクリア
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+
+    // デバウンス処理（50ms後に実行）
+    this.resizeTimeout = window.setTimeout(() => {
+      this.updateCanvasSizeImproved();
+    }, 50);
+  }
+
+  /**
+   * 改善されたキャンバスサイズ更新処理
+   */
+  private updateCanvasSizeImproved(): void {
+    requestAnimationFrame(() => {
+      try {
+        // 統一されたサイズ取得メソッドを使用
+        const { width, height } = this.getCanvasSize();
+        const canvasRect = this.canvas.getBoundingClientRect();
+
+        // 現在のキャンバスCSSサイズを確認
+        const canvasComputedStyle = window.getComputedStyle(this.canvas);
+        const cssWidth = parseFloat(canvasComputedStyle.width);
+        const cssHeight = parseFloat(canvasComputedStyle.height);
+
+        // レンダラーの現在のサイズ
+        const rendererSize = this.renderer.getSize(new THREE.Vector2());
+
+        // デバッグ情報をログ出力
+        console.log(`🔄 Canvas resize analysis:`, {
+          detection: {
+            method: canvasRect.width > 0 ? 'getBoundingClientRect' : 'fallback',
+            getBoundingClientRect: { width: canvasRect.width, height: canvasRect.height },
+            computedStyle: { width: cssWidth, height: cssHeight },
+            finalTargetSize: { width, height },
+          },
+          current: {
+            rendererSize: { width: rendererSize.width, height: rendererSize.height },
+            cameraAspect: this.camera.aspect,
+          },
+          window: {
+            innerSize: { width: window.innerWidth, height: window.innerHeight },
+            devicePixelRatio: window.devicePixelRatio
+          }
+        });
+
+        // CSSサイズの明示的な同期（必要な場合）
+        if (Math.abs(cssWidth - width) > 1 || Math.abs(cssHeight - height) > 1) {
+          console.log(`🔧 CSS size mismatch detected, synchronizing...`);
+          this.canvas.style.width = `${width}px`;
+          this.canvas.style.height = `${height}px`;
+        }
+
+        // カメラとレンダラーを更新
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        
+        // updateStyleをtrueにしてCSS更新も行う
+        this.renderer.setSize(width, height, true);
+        
+        // ピクセル密度も再設定
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        
+        // ViewportGizmoの更新
+        this.viewportGizmo.update();
+
+        // 更新後のサイズ確認
+        const finalRendererSize = this.renderer.getSize(new THREE.Vector2());
+        console.log(`✅ Canvas resize complete:`, {
+          targetSize: { width, height },
+          rendererSize: { width: finalRendererSize.width, height: finalRendererSize.height },
+          aspect: (width/height).toFixed(2),
+          pixelRatio: window.devicePixelRatio
+        });
+
+      } catch (error) {
+        console.error('❌ Canvas resize error:', error);
+        
+        // エラー時のフォールバック
+        const fallbackWidth = window.innerWidth;
+        const fallbackHeight = window.innerHeight;
+        
+        this.camera.aspect = fallbackWidth / fallbackHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(fallbackWidth, fallbackHeight, true);
+        this.viewportGizmo.update();
+        
+        console.log(`🔄 Fallback resize applied: ${fallbackWidth}x${fallbackHeight}`);
+      }
+    });
   }
 
   /**
@@ -593,26 +712,11 @@ export class VRMViewerRefactored {
   }
 
   /**
-   * キャンバスサイズを強制的に更新
+   * キャンバスサイズを強制的に更新（外部API用）
    */
   public updateCanvasSize(): void {
-    // 少し遅延を入れてからサイズ更新（CSS適用を待つ）
-    setTimeout(() => {
-      const canvasRect = this.canvas.getBoundingClientRect();
-      
-      // 有効なサイズが取得できない場合はフォールバック
-      const width = canvasRect.width > 0 ? canvasRect.width : window.innerWidth;
-      const height = canvasRect.height > 0 ? canvasRect.height : window.innerHeight;
-      
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(width, height);
-      
-      // ViewportGizmoの更新
-      this.viewportGizmo.update();
-      
-      console.log(`Canvas size updated: ${width}x${height}`);
-    }, 100);
+    console.log('📢 Manual canvas size update requested');
+    this.updateCanvasSizeImproved();
   }
 
   /**
@@ -630,6 +734,12 @@ export class VRMViewerRefactored {
    */
   dispose(): void {
     this.stop();
+    
+    // リサイズタイマーのクリーンアップ
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+      this.resizeTimeout = null;
+    }
     
     // Managersのクリーンアップ
     this.vrmManager.dispose();
