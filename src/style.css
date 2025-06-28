@@ -2172,10 +2172,55 @@ h3 {
   height: 20px;
   fill: currentColor;
   transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
 }
 
 .icon-button:hover .button-icon {
   transform: scale(1.1);
+}
+
+/* Dark mode adjustments for SVG icons */
+@media (prefers-color-scheme: dark) {
+  .button-icon svg {
+    fill: #ffffff;
+  }
+
+  .icon-button.danger .button-icon svg {
+    fill: #f87171;
+  }
+}
+
+/* VRMA control button icons */
+.vrma-play-pause-btn .button-icon svg,
+.vrma-delete-btn .button-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.vrma-delete-btn .button-icon svg {
+  fill: #ffffff;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+  .button-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .vrma-play-pause-btn .button-icon svg,
+  .vrma-delete-btn .button-icon svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 /* button-label removed - アイコンのみ表示 */

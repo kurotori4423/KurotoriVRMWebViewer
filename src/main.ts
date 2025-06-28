@@ -4,6 +4,17 @@ import { VRMViewerRefactored } from './core/VRMViewerRefactored';
 import { eventBus } from './utils/EventBus';
 
 /**
+ * SVGアイコンの定義
+ */
+const ICONS = {
+  visibility: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/></svg>',
+  visibility_off: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 59-60.5 109.5T772-302Zm20 246L624-222q-35 11-70.5 16.5T480-200q-151 0-269-83.5T40-500q21-53 53-98.5t73-81.5L56-792l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T300-500q0-11 1.5-21t4.5-21l-84-82Zm319 93Zm-151 75Z"/></svg>',
+  delete: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>',
+  play_arrow: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M320-200v-560l440 280-440 280Zm80-280Zm0 134 210-134-210-134v268Z"/></svg>',
+  pause: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z"/></svg>'
+};
+
+/**
  * リファクタリング版アプリケーションのエントリーポイント
  * 元のmain.tsと同等の全機能を実装
  */
@@ -150,7 +161,7 @@ async function main() {
             </svg>
           </button>
           <button class="icon-button" id="toggle-model-visibility" data-action="visibility">
-            <img class="button-icon" src="/assets/icons/visibility.svg" alt="表示" width="20" height="20" />
+            <div class="button-icon" aria-label="表示" role="img"></div>
           </button>
           <button class="icon-button danger" id="delete-selected-model" data-action="delete">
             <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
@@ -224,10 +235,10 @@ async function main() {
                   <!-- 制御ボタン -->
                   <div class="control-buttons">
                     <button class="vrma-play-pause-btn" id="vrma-play-pause" title="再生/一時停止">
-                      <img class="button-icon" src="/assets/icons/play_arrow.svg" alt="再生" width="20" height="20" />
+                      <div class="button-icon" aria-label="再生" role="img"></div>
                     </button>
                     <button class="vrma-delete-btn" id="vrma-delete" title="削除">
-                      <img class="button-icon" src="/assets/icons/delete.svg" alt="削除" width="20" height="20" />
+                      <div class="button-icon" aria-label="削除" role="img"></div>
                     </button>
                   </div>
                 </div>
@@ -335,6 +346,9 @@ async function main() {
   
   // FEAT-013: 初期VRMA UI状態を設定
   updateVRMAUI(vrmViewer);
+
+  // アイコンの初期化
+  initializeIcons();
 
   console.log('リファクタリング版VRMビューワーが起動しました（フル機能版）');
 }
@@ -816,19 +830,9 @@ function setupActionButtonHandlers(vrmViewer: VRMViewerRefactored): void {
  * 表示切替ボタンのアイコンを動的に更新
  */
 function updateVisibilityButtonIcon(button: HTMLButtonElement, isVisible: boolean): void {
-  const iconImg = button.querySelector('.button-icon') as HTMLImageElement;
-  
-  if (iconImg) {
-    if (isVisible) {
-      // 表示状態: visibility.svgアイコン（目のマーク）
-      iconImg.src = '/assets/icons/visibility.svg';
-      iconImg.alt = '表示';
-    } else {
-      // 非表示状態: visibility_off.svgアイコン（目に✕のマーク）
-      iconImg.src = '/assets/icons/visibility_off.svg';
-      iconImg.alt = '非表示';
-    }
-  }
+  const iconDiv = button.querySelector('.button-icon') as HTMLElement;
+  iconDiv.innerHTML = isVisible ? ICONS.visibility : ICONS.visibility_off;
+  iconDiv.setAttribute('aria-label', isVisible ? '表示' : '非表示');
 }
 
 /**
@@ -1064,6 +1068,7 @@ function updateVRMAUI(vrmViewer: VRMViewerRefactored): void {
   const uploadZone = document.getElementById('vrma-upload') as HTMLElement;
   const loadedZone = document.getElementById('vrma-loaded') as HTMLElement;
   const playPauseBtn = document.getElementById('vrma-play-pause') as HTMLButtonElement;
+  const deleteBtn = document.getElementById('vrma-delete') as HTMLButtonElement;
   const filenameSpan = document.getElementById('vrma-filename') as HTMLSpanElement;
   const durationSpan = document.getElementById('vrma-duration') as HTMLSpanElement;
 
@@ -1079,19 +1084,21 @@ function updateVRMAUI(vrmViewer: VRMViewerRefactored): void {
     durationSpan.textContent = `${animationInfo.duration.toFixed(1)}s`;
 
     // 再生/一時停止ボタンの状態更新
-    const buttonIcon = playPauseBtn.querySelector('.button-icon') as HTMLImageElement;
-
+    const playPauseIcon = playPauseBtn.querySelector('.button-icon') as HTMLElement;
     if (state === 'playing') {
-      buttonIcon.src = '/assets/icons/pause.svg';
-      buttonIcon.alt = '一時停止';
+      playPauseIcon.innerHTML = ICONS.pause;
+      playPauseIcon.setAttribute('aria-label', '一時停止');
       playPauseBtn.title = '一時停止';
     } else {
-      buttonIcon.src = '/assets/icons/play_arrow.svg';
-      buttonIcon.alt = '再生';
+      playPauseIcon.innerHTML = ICONS.play_arrow;
+      playPauseIcon.setAttribute('aria-label', '再生');
       playPauseBtn.title = '再生';
     }
+
+    // 削除ボタンのアイコン設定
+    const deleteIcon = deleteBtn.querySelector('.button-icon') as HTMLElement;
+    deleteIcon.innerHTML = ICONS.delete;
   } else {
-    // アニメーション未読み込み
     uploadZone.style.display = 'block';
     loadedZone.style.display = 'none';
   }
@@ -1722,6 +1729,32 @@ function createExpressionSlider(expressionName: string, vrmViewer: VRMViewerRefa
   }
 
   return sliderGroup;
+}
+
+/**
+ * 初期アイコン設定
+ */
+function initializeIcons(): void {
+  // 表示切替ボタンの初期化
+  const visibilityBtn = document.getElementById('toggle-model-visibility') as HTMLButtonElement;
+  if (visibilityBtn) {
+    const iconDiv = visibilityBtn.querySelector('.button-icon') as HTMLElement;
+    iconDiv.innerHTML = ICONS.visibility;
+  }
+
+  // VRMAコントロールボタンの初期化
+  const playPauseBtn = document.getElementById('vrma-play-pause') as HTMLButtonElement;
+  const deleteBtn = document.getElementById('vrma-delete') as HTMLButtonElement;
+
+  if (playPauseBtn) {
+    const playPauseIcon = playPauseBtn.querySelector('.button-icon') as HTMLElement;
+    playPauseIcon.innerHTML = ICONS.play_arrow;
+  }
+
+  if (deleteBtn) {
+    const deleteIcon = deleteBtn.querySelector('.button-icon') as HTMLElement;
+    deleteIcon.innerHTML = ICONS.delete;
+  }
 }
 
 // アプリケーションを開始
