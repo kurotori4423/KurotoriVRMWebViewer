@@ -33,8 +33,8 @@ export class SelectionManager extends BaseManager {
     selectedLightType: null
   };
   
-  // アウトライン表示用
-  private outlineMesh: THREE.Mesh | null = null;
+  // 選択マーカー表示用（三角錐マーカー方式）
+  private selectionMarker: THREE.Mesh | null = null;
 
   constructor(scene: THREE.Scene) {
     super();
@@ -97,15 +97,15 @@ export class SelectionManager extends BaseManager {
     this.clearBoneSelection();
     this.clearLightSelection();
 
-    // 前のアウトラインを削除
-    this.hideOutline();
+    // 前の選択マーカーを削除
+    this.hideSelectionMarker();
 
     // 新しい選択状態を設定
     this.state.selectedModelIndex = index;
     this.state.selectedModel = vrm;
 
-    // アウトライン表示
-    this.showOutline(vrm);
+    // 選択マーカー表示
+    this.showSelectionMarker(vrm);
 
     // イベント発火
     this.emit('vrm:selected', { vrm, index });
@@ -119,7 +119,7 @@ export class SelectionManager extends BaseManager {
       return;
     }
 
-    this.hideOutline();
+    this.hideSelectionMarker();
     this.state.selectedModelIndex = -1;
     this.state.selectedModel = null;
 
@@ -194,19 +194,19 @@ export class SelectionManager extends BaseManager {
   }
 
   /**
-   * アウトライン表示
+   * 選択マーカー表示（三角錐マーカー方式）
    */
-  private showOutline(vrm: VRM): void {
+  private showSelectionMarker(vrm: VRM): void {
     if (!vrm.scene) return;
 
-    // 既存のアウトラインを削除
-    this.hideOutline();
+    // 既存の選択マーカーを削除
+    this.hideSelectionMarker();
 
     // VRMシーンの現在の位置と回転を保存
     const originalPosition = vrm.scene.position.clone();
     const originalRotation = vrm.scene.rotation.clone();
     
-    // VRMバージョンを取得（文字列または数値の可能性があるため、適切に処理）
+    // VRMバージョンを取得
     const vrmMetaVersion = vrm.meta?.metaVersion;
     const isVRM0 = Number(vrmMetaVersion) === 0;
     
@@ -221,61 +221,60 @@ export class SelectionManager extends BaseManager {
     vrm.scene.position.copy(originalPosition);
     vrm.scene.rotation.copy(originalRotation);
     
-    // VRMバージョンに応じてアウトライン位置を調整
+    // VRMバージョンに応じて位置を調整
     let adjustedCenter = center.clone();
     
     if (isVRM0) {
-      // VRM0の場合: Z軸方向の符号を反転
       adjustedCenter.z = -center.z;
-      console.log('VRM0: Z軸方向の符号を反転', `${center.z.toFixed(3)} → ${adjustedCenter.z.toFixed(3)}`);
-    } else {
-      // VRM1の場合: そのまま使用
-      console.log('VRM1: バウンディングボックス中心をそのまま使用');
     }
     
-    // デバッグ情報
-    console.log('=== Outline Debug Info ===');
-    console.log('VRM Position:', `(${originalPosition.x.toFixed(3)}, ${originalPosition.y.toFixed(3)}, ${originalPosition.z.toFixed(3)})`);
-    console.log('VRM Meta Version:', vrmMetaVersion);
-    console.log('BB Center (reset origin):', `(${center.x.toFixed(3)}, ${center.y.toFixed(3)}, ${center.z.toFixed(3)})`);
-    console.log('Adjusted Center:', `(${adjustedCenter.x.toFixed(3)}, ${adjustedCenter.y.toFixed(3)}, ${adjustedCenter.z.toFixed(3)})`);
-    console.log('BB Size:', `(${size.x.toFixed(3)}, ${size.y.toFixed(3)}, ${size.z.toFixed(3)})`);
-
-    // アウトライン用のジオメトリを作成
-    const outlineGeometry = new THREE.BoxGeometry(
-      size.x * 1.05, 
-      size.y * 1.05, 
-      size.z * 1.05
-    );
-
-    // アウトライン用のマテリアル
-    const outlineMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      wireframe: true,
+    // 三角錐マーカーを頭上に配置するための計算
+    const markerHeight = size.y * 0.15; // VRMの高さの15%をマーカーサイズとする
+    const markerRadius = markerHeight * 0.8; // 高さの80%を底面半径とする
+    const offsetHeight = size.y * 0.6; // VRMの高さの60%上方に配置
+    
+    // 三角錐ジオメトリ（下向き）を作成
+    const markerGeometry = new THREE.ConeGeometry(markerRadius, markerHeight, 8);
+    
+    // マーカー用のマテリアル（オレンジ色）
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.8
     });
 
-    // アウトラインメッシュを作成
-    this.outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
-    // 調整されたバウンディングボックス中心に、VRMシーンの位置を加算
-    this.outlineMesh.position.copy(adjustedCenter).add(originalPosition);
+    // 三角錐メッシュを作成
+    this.selectionMarker = new THREE.Mesh(markerGeometry, markerMaterial);
     
-    console.log('Final Outline Position:', `(${this.outlineMesh.position.x.toFixed(3)}, ${this.outlineMesh.position.y.toFixed(3)}, ${this.outlineMesh.position.z.toFixed(3)})`);
+    // 下向きに回転（デフォルトは上向きのため180度回転）
+    this.selectionMarker.rotation.x = Math.PI;
+    
+    // 頭上の位置に配置
+    const markerPosition = adjustedCenter.clone();
+    markerPosition.y += offsetHeight; // 上方に移動
+    markerPosition.add(originalPosition);
+    this.selectionMarker.position.copy(markerPosition);
+    
+    // デバッグ情報
+    console.log('=== Selection Marker Debug Info ===');
+    console.log('VRM Position:', `(${originalPosition.x.toFixed(3)}, ${originalPosition.y.toFixed(3)}, ${originalPosition.z.toFixed(3)})`);
+    console.log('VRM Size:', `(${size.x.toFixed(3)}, ${size.y.toFixed(3)}, ${size.z.toFixed(3)})`);
+    console.log('Marker Height:', markerHeight.toFixed(3));
+    console.log('Marker Position:', `(${markerPosition.x.toFixed(3)}, ${markerPosition.y.toFixed(3)}, ${markerPosition.z.toFixed(3)})`);
     console.log('=== End Debug Info ===');
     
-    this.scene.add(this.outlineMesh);
+    this.scene.add(this.selectionMarker);
   }
 
   /**
-   * アウトライン非表示
+   * 選択マーカー非表示
    */
-  private hideOutline(): void {
-    if (this.outlineMesh) {
-      this.scene.remove(this.outlineMesh);
-      this.outlineMesh.geometry.dispose();
-      (this.outlineMesh.material as THREE.Material).dispose();
-      this.outlineMesh = null;
+  private hideSelectionMarker(): void {
+    if (this.selectionMarker) {
+      this.scene.remove(this.selectionMarker);
+      this.selectionMarker.geometry.dispose();
+      (this.selectionMarker.material as THREE.Material).dispose();
+      this.selectionMarker = null;
     }
   }
 
@@ -328,6 +327,6 @@ export class SelectionManager extends BaseManager {
    * リソースのクリーンアップ
    */
   protected onDispose(): void {
-    this.hideOutline();
+    this.hideSelectionMarker();
   }
 }
