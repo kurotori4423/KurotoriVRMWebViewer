@@ -356,6 +356,26 @@ export class VRMViewerRefactored {
   }
 
   /**
+   * ボーン操作の座標系を設定（ワールド/ローカル）
+   * @param space 'world' (ワールド座標系) または 'local' (ローカル座標系)
+   */
+  setBoneTransformSpace(space: 'world' | 'local'): void {
+    try {
+      this.boneController.setTransformSpace(space);
+    } catch (error) {
+      console.error('ボーン座標系設定エラー:', error);
+    }
+  }
+
+  /**
+   * 現在のボーン操作座標系を取得
+   * @returns 'world' (ワールド座標系) または 'local' (ローカル座標系)
+   */
+  getBoneTransformSpace(): 'world' | 'local' {
+    return this.boneController.getCurrentTransformSpace();
+  }
+
+  /**
    * 現在選択されているボーンが移動可能かどうかを確認
    * @returns true: 移動可能, false: 移動不可
    */

@@ -24,6 +24,7 @@ export class VRMBoneController {
   private selectedBone: THREE.Bone | null = null;
   private boneTransformControls: TransformControls | null = null;
   private currentTransformMode: 'rotate' | 'translate' = 'rotate'; // 現在のモードを保持
+  private currentTransformSpace: 'world' | 'local' = 'world'; // 現在の座標空間を保持
   
   // ボーンマッピング
   private humanoidBones: Map<VRMHumanBoneName, THREE.Bone> = new Map();
@@ -58,6 +59,7 @@ export class VRMBoneController {
   private initializeTransformControls(): void {
     this.boneTransformControls = new TransformControls(this.camera, this.renderer.domElement);
     this.boneTransformControls.setMode('rotate'); // 回転モードをデフォルトに設定
+    this.boneTransformControls.setSpace('world'); // ワールド座標系をデフォルトに設定
     this.boneTransformControls.setSize(0.75); // サイズを少し小さめに設定
     
     // TransformControlsをシーンに追加
@@ -486,6 +488,31 @@ export class VRMBoneController {
     this.currentTransformMode = mode;
     this.boneTransformControls.setMode(mode);
     console.log(`Transformモードを変更: ${mode}`);
+  }
+
+  /**
+   * Transform座標系を設定
+   * @param space 'world' (ワールド座標系) または 'local' (ローカル座標系)
+   */
+  setTransformSpace(space: 'world' | 'local'): void {
+    if (!this.boneTransformControls) {
+      console.warn('TransformControlsが初期化されていません');
+      return;
+    }
+
+    // 座標空間を設定し、内部状態を更新
+    this.currentTransformSpace = space;
+    this.boneTransformControls.setSpace(space);
+    console.log(`Transform座標系を変更: ${space}`);
+  }
+
+  /**
+   * 現在のTransform座標系を取得
+   * @returns 'world' (ワールド座標系) または 'local' (ローカル座標系)
+   */
+  getCurrentTransformSpace(): 'world' | 'local' {
+    console.log(`現在のTransform座標系: ${this.currentTransformSpace}`);
+    return this.currentTransformSpace;
   }
   
   /**

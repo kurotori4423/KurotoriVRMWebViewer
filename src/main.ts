@@ -148,6 +148,13 @@ async function main() {
               <input type="radio" id="bone-translate-mode" name="bone-mode" value="translate" />
               <label for="bone-translate-mode">移動</label>
             </div>
+            <div class="control-group">
+              <label>座標系:</label>
+              <input type="radio" id="bone-world-space" name="coordinate-space" value="world" checked />
+              <label for="bone-world-space">ワールド</label>
+              <input type="radio" id="bone-local-space" name="coordinate-space" value="local" />
+              <label for="bone-local-space">ローカル</label>
+            </div>
             <div id="selected-bone-info">
               <p>選択中ボーン: <span id="selected-bone-name">なし</span></p>
             </div>
@@ -541,6 +548,8 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
   const resetAllBonesBtn = document.getElementById('reset-all-bones') as HTMLButtonElement;
   const boneRotateModeRadio = document.getElementById('bone-rotate-mode') as HTMLInputElement;
   const boneTranslateModeRadio = document.getElementById('bone-translate-mode') as HTMLInputElement;
+  const boneWorldSpaceRadio = document.getElementById('bone-world-space') as HTMLInputElement;
+  const boneLocalSpaceRadio = document.getElementById('bone-local-space') as HTMLInputElement;
 
   toggleBoneVisibilityBtn?.addEventListener('click', () => {
     const visible = vrmViewer.toggleBoneVisibility();
@@ -591,6 +600,21 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
           }, 3000);
         }
       }
+    }
+  });
+
+  // 座標系選択のイベントハンドラー
+  boneWorldSpaceRadio?.addEventListener('change', () => {
+    if (boneWorldSpaceRadio.checked) {
+      vrmViewer.setBoneTransformSpace('world');
+      console.log('ワールド座標系に変更しました');
+    }
+  });
+
+  boneLocalSpaceRadio?.addEventListener('change', () => {
+    if (boneLocalSpaceRadio.checked) {
+      vrmViewer.setBoneTransformSpace('local');
+      console.log('ローカル座標系に変更しました');
     }
   });
 }

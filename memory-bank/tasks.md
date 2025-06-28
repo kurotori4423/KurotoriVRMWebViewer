@@ -1,7 +1,155 @@
 # タスク管理
 
 ## 現在のタスク
-**現在、アクティブなタスクはありません**
+**FEAT-002: ローカル座標系ボーン操作の実装 - 📋 PLAN モード進行中**
+
+### タスク概要
+- **開始日**: 2025年6月28日
+- **タスク種別**: Level 2 (Simple Enhancement)
+- **現在の制限**: ボーン操作は現在ワールド座標での操作のみ
+- **改善目標**: ボーンのローカル座標系での回転も行えるようにする
+- **推定作業時間**: 2時間
+
+### Technology Stack
+- **Framework**: Three.js
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **UI Framework**: Vanilla HTML/CSS
+
+### Technology Validation Checkpoints
+- [x] TransformControls setSpace API確認完了
+- [x] 既存実装構造確認完了
+- [x] UI統合可能性確認完了
+- [x] プロジェクトビルド動作確認完了
+- [x] TypeScript/Three.js統合テスト完了
+
+### ステータス
+- [x] 初期化完了 (VAN)
+- [x] 計画完了 (PLAN) - ✅ 完了
+- [x] 技術検証完了
+- [x] 実装完了 - ✅ **全実装完了**
+- [ ] テスト完了
+
+### 実装計画
+
+#### Phase 1: Core Logic Implementation (45分)
+**対象ファイル**: `src/core/VRMBoneController.ts`
+- [x] **1.1** 座標空間状態管理の追加
+  - [x] `currentTransformSpace: 'world' | 'local' = 'world'` プロパティ追加
+  - [x] 初期状態は'world'に設定
+- [x] **1.2** 座標系切り替えメソッドの実装
+  - [x] `setTransformSpace(space: 'world' | 'local'): void`メソッド追加
+  - [x] TransformControls.setSpace()の呼び出し実装
+  - [x] 状態保持と検証ロジック追加
+- [x] **1.3** 現在の座標空間取得メソッド追加
+  - [x] `getCurrentTransformSpace(): 'world' | 'local'`メソッド実装
+  - [x] コンソールログでデバッグ情報出力
+
+**Phase 1 完了時刻**: 2025年6月28日 11:48:15
+
+#### Phase 2: API Integration (30分)
+**対象ファイル**: `src/core/VRMViewerRefactored.ts`
+- [x] **2.1** 公開APIメソッドの追加
+  - [x] `setBoneTransformSpace(space: 'world' | 'local'): void`実装
+  - [x] VRMBoneController.setTransformSpace()への委譲
+  - [x] エラーハンドリングの実装
+- [x] **2.2** 現在状態取得APIの追加
+  - [x] `getBoneTransformSpace(): 'world' | 'local'`実装
+  - [x] VRMBoneController.getCurrentTransformSpace()への委譲
+
+**Phase 2 完了時刻**: 2025年6月28日 11:52:30
+
+#### Phase 3: UI Integration (45分)
+**対象ファイル**: `src/main.ts`
+- [x] **3.1** HTMLテンプレートの拡張
+  - [x] ワールド/ローカル座標系ラジオボタンの追加
+  - [x] 既存のrotate/translateボタンの下に配置
+  - [x] 適切なラベルとIDの設定
+- [x] **3.2** イベントハンドラーの実装
+  - [x] `setupBoneControlHandlers()`の拡張
+  - [x] ワールド/ローカル座標系ラジオボタンのchange イベント
+  - [x] `vrmViewer.setBoneTransformSpace()`の呼び出し
+- [x] **3.3** 視覚的フィードバックの実装
+  - [x] 座標系変更時のコンソールログ出力
+  - [x] 必要に応じて一時的な視覚通知（オプション）
+
+**Phase 3 完了時刻**: 2025年6月28日 11:57:22
+
+### Dependencies
+- Three.js TransformControls (既存)
+- VRMBoneController (既存)
+- VRMViewerRefactored (既存)
+- main.ts UI システム (既存)
+
+### 技術的課題と対策
+
+#### 課題 1: TransformControls座標系の視覚的理解
+- **リスク**: ユーザーがローカル座標系とワールド座標系の違いを理解しにくい
+- **対策**: 
+  - コンソールログでの詳細なフィードバック
+  - 座標系変更時の軸方向表示の確認
+  - 必要に応じてヘルプテキストの追加
+
+#### 課題 2: ボーン階層とローカル座標系の複雑性
+- **リスク**: 親子関係のあるボーンでローカル座標系が予期しない動作をする可能性
+- **対策**:
+  - 各ボーンでの座標系テスト実行
+  - 異なるボーン（Hips, Spine, Arms等）での動作確認
+  - 問題発生時のフォールバック機能（ワールド座標系に戻す）
+
+#### 課題 3: UI状態管理の一貫性
+- **リスク**: 座標系とモード（rotate/translate）の状態管理が複雑になる
+- **対策**:
+  - 状態変更時の包括的なUI更新
+  - デフォルト値の明確な定義
+  - 状態不整合時の自動修復機能
+
+### 技術仕様詳細
+
+#### TransformControls API利用
+```typescript
+// ワールド座標系（デフォルト）
+this.boneTransformControls.setSpace('world');
+
+// ローカル座標系
+this.boneTransformControls.setSpace('local');
+```
+
+#### UI構造拡張
+```html
+<!-- 既存のモード選択 -->
+<input type="radio" id="bone-rotate-mode" name="bone-mode" value="rotate" checked />
+<label for="bone-rotate-mode">回転</label>
+<input type="radio" id="bone-translate-mode" name="bone-mode" value="translate" />
+<label for="bone-translate-mode">移動</label>
+
+<!-- 新規追加: 座標系選択 -->
+<div class="coordinate-space-controls">
+  <label>座標系:</label>
+  <input type="radio" id="bone-world-space" name="coordinate-space" value="world" checked />
+  <label for="bone-world-space">ワールド</label>
+  <input type="radio" id="bone-local-space" name="coordinate-space" value="local" />
+  <label for="bone-local-space">ローカル</label>
+</div>
+```
+
+### テスト計画
+1. **基本機能テスト**
+   - [ ] ワールド座標系でのボーン操作確認
+   - [ ] ローカル座標系でのボーン操作確認
+   - [ ] 座標系切り替え動作確認
+2. **統合テスト**
+   - [ ] rotate/translateモードとの組み合わせテスト
+   - [ ] 異なるボーンでのローカル座標系テスト
+   - [ ] UI状態管理の整合性テスト
+3. **ユーザー受け入れテスト**
+   - [ ] 直感的な操作性確認
+   - [ ] 視覚的フィードバックの適切性確認
+
+### Creative Phases Required
+- [ ] **該当なし** (Level 2のため、標準実装のみ)
+
+**次のステップ**: 技術検証完了後、CREATIVEモードは不要のため直接IMPLEMENTモードへ移行
 
 ## 完了済みタスク
 
@@ -103,17 +251,6 @@
   2. ポストプロセス法: エッジ検出シェーダーでアウトライン生成
   3. ストローク法: 法線方向に頂点を押し出してアウトライン生成
 - **推定作業時間**: 3-4時間
-
-### FEAT-002: ローカル座標系ボーン操作の実装
-- **タスク種別**: Level 2 (Simple Enhancement)
-- **現在の制限**: ボーン操作は現在ワールド座標での操作のみ
-- **改善目標**: ボーンのローカル座標系での回転も行えるようにする
-- **対象ファイル**: `src/core/VRMBoneController.ts`, `src/main.ts` (UI統合)
-- **実装内容**:
-  - TransformControlsにワールド/ローカル座標系切り替え機能を追加
-  - UI上での座標系切り替えボタン実装
-  - ローカル座標系でのボーン回転の動作確認
-- **推定作業時間**: 2時間
 
 ## 最近完了したタスク
 - **FIX-004**: ボーン移動制限の実装 (2024年12月28日完了) ✅
@@ -229,3 +366,7 @@
 - 完了したタスクの詳細: `memory-bank/archive/`フォルダ
 - 振り返り記録: `memory-bank/reflection/`フォルダ
 - プロジェクト現状: `memory-bank/activeContext.md` 
+
+**PLANフェーズ完了日**: 2025年6月28日 11:41:27 
+
+**実装完了時刻**: 2025年6月28日 11:57:22 
