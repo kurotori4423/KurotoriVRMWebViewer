@@ -464,6 +464,24 @@ export class VRMBoneController {
     if (this.currentVRM.update) {
       this.currentVRM.update(0);
     }
+
+    // 視覚的要素の更新（カスタムボーン線、SkeletonHelper）
+    this.updateBoneVisualizationAndVRM();
+
+    // TransformControlsが選択されている場合、その位置と回転もリセット
+    if (this.boneTransformControls && this.selectedBone) {
+      // 選択されているボーンの新しいワールド位置と回転を取得
+      const worldPosition = new THREE.Vector3();
+      const worldQuaternion = new THREE.Quaternion();
+      this.selectedBone.getWorldPosition(worldPosition);
+      this.selectedBone.getWorldQuaternion(worldQuaternion);
+      
+      // TransformControlsの位置と回転を更新
+      this.boneTransformControls.object?.position.copy(worldPosition);
+      this.boneTransformControls.object?.quaternion.copy(worldQuaternion);
+      
+      console.log('TransformControlsの位置と回転をリセットしました');
+    }
   }
   
   /**
