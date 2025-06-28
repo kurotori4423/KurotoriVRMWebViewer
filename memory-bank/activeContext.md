@@ -1,129 +1,104 @@
 # 🎯 ACTIVE CONTEXT - 現在の開発状況
 
-**最終更新**: 2025年6月28日 18:21:03
-**現在のモード**: **CREATIVE** （FEAT-011 全設計フェーズ完了）  
-**アクティブタスク**: **FEAT-011** - VRM表情設定機能実装
+**最終更新**: 2025年6月28日 19:21:48
+**現在のモード**: **VAN** ✅ （複雑度判定完了・PLAN移行必須）  
+**アクティブタスク**: **FEAT-012** - 選択中モデル設定UI再設計・タブ機能実装
 
 ---
 
 ## 📋 現在のタスク状況
 
-### **FEAT-011**: VRM表情設定機能実装 ⚡
-- **開始日時**: 2025年1月24日
+### **FEAT-012**: 選択中モデル設定UI再設計・タブ機能実装 ⚡
+- **開始日時**: 2025年6月28日 19:21:48
 - **複雑度**: **Level 3** (Intermediate Feature)
-- **現在フェーズ**: **VAN** ✅ → **PLAN** ✅ → **CREATIVE** ✅ → **IMPLEMENT** ⏳
-- **ステータス**: 全設計フェーズ完了、IMPLEMENTモード移行準備完了
+- **現在フェーズ**: **VAN** ✅ → **PLAN** ⏳
+- **ステータス**: VAN複雑度判定完了、PLAN mode強制移行必須
 
 #### 🎯 タスク概要
-選択中モデル設定にVRMの表情設定機能を追加。ボーン操作の下に「表情設定」項目を追加し、表情名・スライダー・設定値を表示する構成。
+選択中モデル設定モーダルに大幅なUI改善を実装。常時表示ボタン（アイコン付き）を追加し、タブ機能で「基本」「ポーズ」「表情」に機能を整理。全削除ボタンをメイン設定ウィンドウに移動。
 
-#### 🎨 **CREATIVE完了成果**
+#### 🔧 **VAN完了分析**
 ```
-🎨 CREATIVE PHASES ACHIEVEMENTS
+🔍 VAN ANALYSIS COMPLETED
 ┌─────────────────────────────────────────┐
-│ ✅ UI/UX設計: スタック縦並び型           │
-│ ✅ データ構造設計: ハイブリッド型        │
-│ ✅ アーキテクチャ設計: Integration型     │
-│ ✅ スタイルガイド: memory-bank/style... │
+│ ✅ プラットフォーム: Windows PowerShell   │
+│ ✅ Memory Bank: 正常初期化               │
+│ ✅ アイコン確認: 必要5つ存在確認済み      │
+│ ✅ 複雑度判定: Level 3 確定             │
 │                                         │
-│ 📄 創作物: 4つの設計書 + スタイルガイド  │
+│ 🚫 PLAN mode 強制移行必須               │
 └─────────────────────────────────────────┘
 ```
 
-#### 📄 **設計書一覧**
-1. **スタイルガイド**: `memory-bank/style-guide.md`
-   - 既存プロジェクトスタイル分析
-   - 表情制御パネル適用ガイドライン
+#### 📋 **詳細要求仕様**
 
-2. **UI/UX設計書**: `memory-bank/creative/creative-uiux-FEAT-011.md`
-   - **設計決定**: スタック縦並び型パネル
-   - HTML構造・CSS実装・レスポンシブ対応設計
+**1. 常時表示ボタン（アイコン付き）**
+- リセット: replay.svg
+- フォーカス: frame_person.svg  
+- 表示非表示: visibility.svg / visibility_off.svg
+- 削除: delete.svg
 
-3. **データ構造設計書**: `memory-bank/creative/creative-data-FEAT-011.md`
-   - **設計決定**: ハイブリッド型管理システム
-   - VRMExpressionController・VRMExpressionData・型安全性設計
+**2. タブ機能（3つ）**
+- 「基本」: ルート操作・スケール（ボーン非表示）
+- 「ポーズ」: ボーン操作・ポーズリセット（ボーン表示）
+- 「表情」: 表情制御・表情リセット
 
-4. **アーキテクチャ設計書**: `memory-bank/creative/creative-architecture-FEAT-011.md`
-   - **設計決定**: Integration型統合
-   - システム統合・EventBusフロー・エラーハンドリング・段階的実装戦略
+**3. その他変更**
+- 全削除ボタン: メイン設定ウィンドウに移動
 
-#### 🏗️ 実装計画サマリー
-- **Phase 1**: VRMExpressionController・VRMExpressionData・EventBus統合・型定義
-- **Phase 2**: HTML構造・CSS実装・setupExpressionControlHandlers()・基本操作確認
-- **Phase 3**: VRMViewerRefactored統合・レンダリングループ統合・エラーハンドリング・最適化
+#### ⚠️ **CRITICAL FINDING**: PLAN MODE必須
+Level 3 Intermediate Featureのため、VAN modeでの直接実装は**BLOCKED**です。包括的計画策定のため**PLAN mode**への移行が必須となります。
 
-#### 🎨 **設計決定サマリー**
-```
-🔧 DESIGN DECISIONS SUMMARY
-┌─────────────────────────────────────────┐
-│ UI/UX: スタック縦並び型                  │
-│ └─ 既存control-groupパターン完全マッチ   │
-│                                         │
-│ データ: ハイブリッド型管理システム       │
-│ └─ 集中管理+個別キャッシュ最適化        │
-│                                         │
-│ アーキテクチャ: Integration型統合        │
-│ └─ BaseManagerパターン完全準拠          │
-└─────────────────────────────────────────┘
-```
-
-#### 🚨 **CRITICAL FINDING**: IMPLEMENT移行準備完了
-CREATIVEフェーズで**全設計決定**が完了しました。UI/UX・データ構造・アーキテクチャの詳細設計書により、実装準備が整っています。
-
-#### 📊 **技術的実装準備状況**
-- ✅ **VRM表情API確認済み**: `expressionManager.setValue()` & `.update()`
-- ✅ **既存UI統合ポイント特定**: ボーン操作セクション直後（main.ts line 189）
-- ✅ **BaseManagerパターン準拠設計**: VRMExpressionController設計完了
-- ✅ **EventBus統合設計**: 全イベントフロー詳細化完了
-- ✅ **型安全性設計**: TypeScript型定義・型ガード関数設計完了
-- ✅ **エラーハンドリング設計**: 例外安全性・リソース管理設計完了
-- ✅ **段階的実装戦略**: 3フェーズ実装計画策定完了
+#### 🏗️ **技術影響範囲**
+- **主要ファイル**: src/main.ts (HTML構造大幅変更)
+- **スタイル**: src/style.css (タブ・アイコンスタイル新規)
+- **アイコン**: public/assets/icons/ (5つ確認済み)
+- **機能**: 既存UI操作の大幅再編成
 
 ---
 
 ## 🚀 **次期アクション**
 
-### **NEXT RECOMMENDED MODE**: **IMPLEMENT MODE**
+### **NEXT MANDATORY MODE**: **PLAN MODE**
 
 ```
-🎯 IMPLEMENTATION READINESS STATUS
+🚫 FORCED MODE TRANSITION REQUIRED
 ┌─────────────────────────────────────────┐
-│ ✅ 設計書: 4文書 + スタイルガイド       │
-│ ✅ 技術検証: VRM API・UI統合確認済み     │
-│ ✅ アーキテクチャ: 既存システム統合設計  │
-│ ✅ 実装戦略: 3段階フェーズ計画策定      │
+│ Level 3タスク検出により、VAN modeでの   │
+│ 直接実装は禁止されています              │
 │                                         │
-│ 🚀 IMPLEMENT MODE 移行準備完了          │
+│ 必須: PLAN modeで包括的計画策定         │
+│                                         │
+│ 🎯 次のアクション: Type 'PLAN'          │
 └─────────────────────────────────────────┘
 ```
 
-#### 📋 **実装対象ファイル**
-1. **新規作成**:
-   - `src/core/VRMExpressionController.ts`
-   - CSS表情制御スタイル（style.css追加）
-
-2. **拡張対象**:
-   - `src/core/VRMViewerRefactored.ts` - expressionController統合
-   - `src/main.ts` - setupExpressionControlHandlers()追加・HTML構造追加
-   - `src/types/events.ts` - 表情関連イベント型定義追加
-
-#### ⏭️ **実行アクション**
-**コマンド**: `IMPLEMENT` でIMPLEMENTモードに移行し、段階的実装を開始
+#### 📋 **PLAN mode実行内容**
+1. **UI設計**: タブ構造・アイコン配置の詳細設計
+2. **HTML構造**: 既存モーダルの再設計プラン
+3. **CSS設計**: タブ機能・アイコンスタイルの設計
+4. **実装戦略**: 段階的実装計画・影響範囲分析
+5. **統合計画**: 既存機能との統合・テスト戦略
 
 ---
 
 ## 📊 **プロジェクト状況**
 
-### ✅ 完了フェーズ
+### ✅ 完了フェーズ (FEAT-011)
 - **VAN**: 複雑度判定 (Level 3 Intermediate Feature)
 - **PLAN**: 包括的計画策定
 - **CREATIVE**: UI/UX・データ構造・アーキテクチャ設計
-
-### ⏳ 残作業
-- **IMPLEMENT**: 実装コード作成
-- **TEST**: 機能検証・バグ修正
+- **IMPLEMENT**: 実装完了
 - **REFLECT**: 振り返り・学習記録
 - **ARCHIVE**: タスク完了・アーカイブ化
+
+### ⏳ FEAT-012 残作業
+- **VAN**: ✅ 完了（複雑度判定・初期分析）
+- **PLAN**: ⏳ 待機中（包括的計画策定）
+- **CREATIVE**: 待機中（設計フェーズ）
+- **IMPLEMENT**: 待機中（実装フェーズ）
+- **REFLECT**: 待機中（振り返り）
+- **ARCHIVE**: 待機中（アーカイブ）
 
 ---
 
@@ -133,12 +108,13 @@ CREATIVEフェーズで**全設計決定**が完了しました。UI/UX・デー
 - **VRMRootController**: VRMルート操作（FEAT-009）
 - **BonePointsManager**: ボーン線階層管理（FEAT-010）
 - **VRMCoordinateHelper**: VRM0/VRM1座標統一（FEAT-010）
+- **VRMExpressionController**: 表情制御（FEAT-011完了）
 - **TransformControls**: 統合制御システム（FEAT-009統合）
 
 ### 技術基盤強化完了
 - **座標系統一**: VRMシーン階層内配置による根本的解決
 - **最適化基盤**: 階層キャッシュ・バッチ更新システム
-- **VRM技術**: VRM0/VRM1差異・SpringBone・座標系変換理論
+- **VRM技術**: VRM0/VRM1差異・SpringBone・座標系変換理論・表情制御
 - **設計パターン**: BonePointsパターン（他視覚化要素にも適用可能）
 
 ### アーキテクチャ完成度
@@ -151,14 +127,21 @@ CREATIVEフェーズで**全設計決定**が完了しました。UI/UX・デー
 
 ## 🎓 蓄積された技術資産
 
-### VRM表情システム理解
+### VRM表情システム理解（FEAT-011完了）
 - **VRM表情API**: expressionManager操作方法確認済み
 - **動的表情取得**: VRMモデル固有の表情リスト抽出手法
 - **リアルタイム制御**: スライダー→表情値→VRM更新フロー
+- **UI統合**: 既存システムとの完全統合
+
+### UI/UX設計経験
+- **モーダル設計**: 右下モーダル・レスポンシブ対応
+- **glassmorphism**: 既存デザインシステム統合
+- **アイコン統合**: SVGアイコンの効果的活用
+- **段階的UI改善**: ユーザーフィードバック対応
 
 ### Level 3実装戦略
-- **段階的実装**: Phase 1-3の明確な実装戦略
-- **チャレンジ対策**: 4大課題（動的取得・複数VRM・パフォーマンス・UI統合）の解決策
+- **段階的実装**: Phase分割による効率的開発
+- **チャレンジ対策**: 複雑UI変更の解決策パターン
 - **クリエイティブ設計**: UI/UX・データ構造・イベントフローの設計要件
 
 ### Three.js・VRM統合技術
@@ -173,24 +156,24 @@ CREATIVEフェーズで**全設計決定**が完了しました。UI/UX・デー
 **全体安定性**: ⭐⭐⭐⭐⭐ (BonePointsパターン統合・SpringBone対応完了)  
 **アーキテクチャ**: ⭐⭐⭐⭐⭐ (新設計パターン確立・BaseManagerパターン統一)  
 **コード品質**: ⭐⭐⭐⭐⭐ (TypeScript型安全・詳細文書化・モジュール化)  
-**UI/UX**: ⭐⭐⭐⭐⭐ (直感的操作・リアルタイム応答・完全動作)  
+**UI/UX**: ⭐⭐⭐⭐⭐ (直感的操作・リアルタイム応答・完全動作・表情制御統合)  
 **パフォーマンス**: ⭐⭐⭐⭐⭐ (80%最適化・60FPS維持・メモリ効率化)
 
 ---
 
 ## 🔄 Memory Bank同期状況
 
-### PLAN完了更新
-- **Tasks**: FEAT-011包括的計画策定完了、CREATIVEモード移行準備
-- **ActiveContext**: PLAN成果記録、クリエイティブフェーズ特定完了
-- **次ステップ**: CREATIVEモード移行、設計フェーズ開始
+### VAN完了更新
+- **Tasks**: FEAT-012 VAN複雑度判定完了、PLAN mode移行準備
+- **ActiveContext**: VAN成果記録、PLAN mode必須判定完了
+- **次ステップ**: PLAN mode移行、包括的計画策定開始
 
 ### Git同期予定
-- **変更ファイル**: Memory Bank FEAT-011 PLAN完了記録
-- **コミットメッセージ**: "FEAT-011: VRM表情設定機能 - PLAN包括計画完了・CREATIVE移行準備"
+- **変更ファイル**: Memory Bank FEAT-012 VAN完了記録
+- **コミットメッセージ**: "FEAT-012: 選択中モデル設定UI再設計 - VAN複雑度判定完了・PLAN移行準備"
 
 ---
 
-**Context更新完了**: 2025年6月28日 18:10:51  
-**PLAN分析**: ✅ 完了（包括的計画策定・技術検証・クリエイティブフェーズ特定）  
-**推奨アクション**: `CREATIVE` モードに移行して設計フェーズを開始 
+**Context更新完了**: 2025年6月28日 19:21:48  
+**VAN分析**: ✅ 完了（複雑度判定・技術検証・PLAN移行確定）  
+**推奨アクション**: `PLAN` モードに移行して包括的計画を策定 
