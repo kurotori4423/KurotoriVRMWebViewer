@@ -250,7 +250,7 @@ export class SelectionManager extends BaseManager {
     this.selectionMarker.rotation.x = Math.PI;
     
     // 頭上の位置に配置
-    const markerPosition = vrm.scene.position.clone();//adjustedCenter.clone();
+    const markerPosition = new THREE.Vector3(0,0,0);//adjustedCenter.clone();
     markerPosition.y += offsetHeight; // 上方に移動
     markerPosition.add(originalPosition);
     this.selectionMarker.position.copy(markerPosition);
