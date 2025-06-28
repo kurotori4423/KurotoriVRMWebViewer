@@ -2496,7 +2496,7 @@ h3 {
   justify-content: center;
 }
 
-.play-pause-btn, .delete-btn {
+.vrma-play-pause-btn, .vrma-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2511,23 +2511,23 @@ h3 {
   flex-shrink: 0;
 }
 
-.play-pause-btn:hover {
+.vrma-play-pause-btn:hover {
   background: #e0e0e0;
   transform: translateY(-1px);
 }
 
-.delete-btn {
+.vrma-delete-btn {
   background: #dc3545;
   color: white;
   border-color: #dc3545;
 }
 
-.delete-btn:hover {
+.vrma-delete-btn:hover {
   background: #c82333;
   transform: translateY(-1px);
 }
 
-.delete-btn .button-icon {
+.vrma-delete-btn .button-icon {
   filter: brightness(0) invert(1);
 }
 
@@ -2569,13 +2569,13 @@ h3 {
     color: #ccc;
   }
   
-  .play-pause-btn {
+  .vrma-play-pause-btn {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
     color: white;
   }
   
-  .play-pause-btn:hover {
+  .vrma-play-pause-btn:hover {
     background: rgba(255, 255, 255, 0.15);
   }
 }
@@ -2594,7 +2594,7 @@ h3 {
     flex-wrap: wrap;
   }
   
-  .play-pause-btn, .delete-btn {
+  .vrma-play-pause-btn, .vrma-delete-btn {
     justify-content: center;
     width: 44px;
     height: 44px;

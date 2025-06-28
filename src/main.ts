@@ -193,6 +193,47 @@ async function main() {
             
             <!-- ポーズタブコンテンツ -->
             <div class="tab-panel" id="pose-panel" role="tabpanel" aria-labelledby="pose-tab" style="display: none;">
+              
+              <!-- VRMAアニメーション制御セクション -->
+              <div class="vrma-section">
+                <h4 class="section-title">VRMAアニメーション</h4>
+                
+                <!-- アップロード領域（未ロード時） -->
+                <div id="vrma-upload" class="upload-zone">
+                  <div class="upload-text">VRMAファイルをドラッグ&ドロップ</div>
+                  <div class="upload-text">または</div>
+                  <button class="upload-btn" id="vrma-file-select">ファイルを選択</button>
+                  <input type="file" id="vrma-file-input" accept=".vrma" style="display: none;" />
+                </div>
+                
+                <!-- アニメーション情報（ロード済み時） -->
+                <div id="vrma-loaded" class="animation-info" style="display: none;">
+                  <div class="info-row">
+                    <span class="info-label">ファイル名:</span>
+                    <span class="info-value" id="vrma-filename">-</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">再生時間:</span>
+                    <span class="info-value" id="vrma-duration">-</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">現在時刻:</span>
+                    <span class="info-value" id="vrma-current-time">-</span>
+                  </div>
+                  
+                  <!-- 制御ボタン -->
+                  <div class="control-buttons">
+                    <button class="vrma-play-pause-btn" id="vrma-play-pause" title="再生/一時停止">
+                      <img class="button-icon" src="/assets/icons/play_arrow.svg" alt="再生" width="20" height="20" />
+                    </button>
+                    <button class="vrma-delete-btn" id="vrma-delete" title="削除">
+                      <img class="button-icon" src="/assets/icons/delete.svg" alt="削除" width="20" height="20" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 既存のボーン制御 -->
               <div class="control-group">
                 <button id="toggle-bone-visibility" class="control-btn">ボーン表示切替</button>
                 <button id="reset-all-bones" class="control-btn">ポーズリセット</button>
@@ -291,6 +332,7 @@ async function main() {
   setupModelControlHandlers(vrmViewer);
   setupBoneControlHandlers(vrmViewer);
   setupExpressionControlHandlers(vrmViewer);
+  setupVRMAHandlers(vrmViewer);
   setupKeyboardHandlers(vrmViewer);
   setupToolbarHandlers(vrmViewer); // UI-001: ツールバー座標系切替
   setupModalHandlers(vrmViewer);
@@ -300,6 +342,9 @@ async function main() {
   
   // イベントバスからのイベントを監視してUIを更新
   setupEventListeners(vrmViewer);
+  
+  // FEAT-013: 初期VRMA UI状態を設定
+  updateVRMAUI(vrmViewer);
 
   console.log('リファクタリング版VRMビューワーが起動しました（フル機能版）');
 }
@@ -931,6 +976,186 @@ function setupExpressionControlHandlers(vrmViewer: VRMViewerRefactored): void {
 /**
  * キーボードショートカットのイベントハンドラーを設定
  */
+
+/**
+ * VRMAアニメーション制御のハンドラーを設定
+ */
+function setupVRMAHandlers(vrmViewer: VRMViewerRefactored): void {
+  const uploadZone = document.getElementById('vrma-upload') as HTMLElement;
+  const fileSelectBtn = document.getElementById('vrma-file-select') as HTMLButtonElement;
+  const fileInput = document.getElementById('vrma-file-input') as HTMLInputElement;
+  const playPauseBtn = document.getElementById('vrma-play-pause') as HTMLButtonElement;
+  const deleteBtn = document.getElementById('vrma-delete') as HTMLButtonElement;
+
+  // ファイル選択ボタン
+  fileSelectBtn?.addEventListener('click', () => {
+    fileInput?.click();
+  });
+
+  // ファイル入力
+  fileInput?.addEventListener('change', async (event) => {
+    const files = (event.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.toLowerCase().endsWith('.vrma')) {
+        await handleVRMAFileLoad(file, vrmViewer);
+      } else {
+        alert('VRMAファイルを選択してください');
+      }
+      fileInput.value = '';
+    }
+  });
+
+  // ドラッグ&ドロップ
+  uploadZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone?.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone?.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.toLowerCase().endsWith('.vrma')) {
+        await handleVRMAFileLoad(file, vrmViewer);
+      } else {
+        alert('VRMAファイルを選択してください');
+      }
+    }
+  });
+
+  // 再生/一時停止ボタン
+  playPauseBtn?.addEventListener('click', () => {
+    const state = vrmViewer.getAnimationState();
+    if (state === 'playing') {
+      vrmViewer.pauseAnimation();
+    } else if (state === 'paused' || state === 'loaded') {
+      vrmViewer.playAnimation();
+    }
+  });
+
+  // 削除ボタン
+  deleteBtn?.addEventListener('click', () => {
+    if (confirm('VRMAアニメーションを削除しますか？')) {
+      vrmViewer.clearAnimation();
+      updateVRMAUI(vrmViewer);
+    }
+  });
+
+  // VRMAイベントリスナー
+  eventBus.on('vrma:loaded', () => {
+    updateVRMAUI(vrmViewer);
+  });
+
+  eventBus.on('vrma:play', () => {
+    updateVRMAUI(vrmViewer);
+  });
+
+  eventBus.on('vrma:pause', () => {
+    updateVRMAUI(vrmViewer);
+  });
+
+  eventBus.on('vrma:stop', () => {
+    updateVRMAUI(vrmViewer);
+  });
+
+  eventBus.on('vrma:time-update', ({ vrm, currentTime, duration }) => {
+    // 選択されたVRMの時間のみを表示
+    const selectedVRM = vrmViewer.getSelectedModel();
+    if (selectedVRM && vrm === selectedVRM) {
+      updateVRMATimeDisplay(currentTime, duration);
+    }
+  });
+
+  eventBus.on('vrma:error', ({ error }) => {
+    console.error('VRMA Error:', error);
+    alert(`VRMAエラー: ${error.message}`);
+    updateVRMAUI(vrmViewer);
+  });
+}
+
+/**
+ * VRMAファイル読み込み処理
+ */
+async function handleVRMAFileLoad(file: File, vrmViewer: VRMViewerRefactored): Promise<void> {
+  try {
+    await vrmViewer.loadVRMAFile(file);
+    console.log(`VRMAファイル ${file.name} が読み込まれました`);
+  } catch (error) {
+    console.error('VRMA読み込みエラー:', error);
+    alert(`VRMAファイル ${file.name} の読み込みに失敗しました: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * VRMA UI状態更新
+ */
+function updateVRMAUI(vrmViewer: VRMViewerRefactored): void {
+  const uploadZone = document.getElementById('vrma-upload') as HTMLElement;
+  const loadedZone = document.getElementById('vrma-loaded') as HTMLElement;
+  const playPauseBtn = document.getElementById('vrma-play-pause') as HTMLButtonElement;
+  const filenameSpan = document.getElementById('vrma-filename') as HTMLSpanElement;
+  const durationSpan = document.getElementById('vrma-duration') as HTMLSpanElement;
+
+  const animationInfo = vrmViewer.getAnimationInfo();
+  const state = vrmViewer.getAnimationState();
+
+  if (animationInfo && state !== 'idle') {
+    // アニメーション読み込み済み
+    uploadZone.style.display = 'none';
+    loadedZone.style.display = 'block';
+
+    filenameSpan.textContent = animationInfo.fileName;
+    durationSpan.textContent = `${animationInfo.duration.toFixed(1)}s`;
+
+    // 再生/一時停止ボタンの状態更新
+    const buttonIcon = playPauseBtn.querySelector('.button-icon') as HTMLImageElement;
+
+    if (state === 'playing') {
+      buttonIcon.src = '/assets/icons/pause.svg';
+      buttonIcon.alt = '一時停止';
+      playPauseBtn.title = '一時停止';
+    } else {
+      buttonIcon.src = '/assets/icons/play_arrow.svg';
+      buttonIcon.alt = '再生';
+      playPauseBtn.title = '再生';
+    }
+  } else {
+    // アニメーション未読み込み
+    uploadZone.style.display = 'block';
+    loadedZone.style.display = 'none';
+  }
+}
+
+/**
+ * VRMA時間表示更新
+ */
+function updateVRMATimeDisplay(currentTime: number, duration: number): void {
+  const currentTimeSpan = document.getElementById('vrma-current-time') as HTMLSpanElement;
+  if (currentTimeSpan) {
+    currentTimeSpan.textContent = `${currentTime.toFixed(1)}s / ${duration.toFixed(1)}s`;
+  }
+}
+
+/**
+ * 選択VRMの現在時刻表示更新
+ */
+function updateVRMACurrentTime(vrmViewer: VRMViewerRefactored): void {
+  const animationInfo = vrmViewer.getAnimationInfo();
+  if (animationInfo) {
+    const currentTime = vrmViewer.getCurrentAnimationTime();
+    updateVRMATimeDisplay(currentTime, animationInfo.duration);
+  }
+}
+
 function setupKeyboardHandlers(vrmViewer: VRMViewerRefactored): void {
   document.addEventListener('keydown', (event) => {
     if (event.target instanceof HTMLInputElement) return; // 入力フィールドでは無効化
@@ -1069,6 +1294,8 @@ function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
     updateModelList(vrmViewer);
     updateSelectedModelControls(vrmViewer);
     updateExpressionControls(vrmViewer, index, vrm); // FEAT-011: 表情制御UI更新
+    updateVRMAUI(vrmViewer); // FEAT-013: VRMA UI更新
+    updateVRMACurrentTime(vrmViewer); // FEAT-013: 選択VRMの現在時刻表示更新
   });
 
   // VRM削除時の処理
@@ -1076,12 +1303,14 @@ function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
     updateModelList(vrmViewer);
     updateSelectedModelControls(vrmViewer);
     updateExpressionControls(vrmViewer, -1, null); // FEAT-011: 表情制御UI更新
+    updateVRMAUI(vrmViewer); // FEAT-013: VRMA UI更新
   });
 
   // 選択解除時の処理
   eventBus.on('vrm:selection-cleared', () => {
     updateSelectedModelControls(vrmViewer);
     updateExpressionControls(vrmViewer, -1, null); // FEAT-011: 表情制御UI更新
+    updateVRMAUI(vrmViewer); // FEAT-013: VRMA UI更新
   });
 
   // ボーン選択変更時の処理
