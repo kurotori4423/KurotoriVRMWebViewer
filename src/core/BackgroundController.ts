@@ -6,6 +6,7 @@
  * - グラデーション背景の生成
  * - 透明背景の設定
  * - 背景のリセット機能
+ * - グリッドヘルパーの表示制御
  */
 
 import * as THREE from 'three';
@@ -16,9 +17,28 @@ export interface BackgroundSettings {
   colors: string[];
 }
 
+export interface GridSettings {
+  visible: boolean;
+  size: number;
+  divisions: number;
+  colorCenterLine: string;
+  colorGrid: string;
+}
+
 export class BackgroundController extends BaseManager {
   private scene: THREE.Scene;
   private defaultBackgroundColor = '#2a2a2a';
+  
+  // グリッドヘルパー関連
+  private gridHelper: THREE.GridHelper | null = null;
+  private gridVisible: boolean = false;
+  private gridSettings: GridSettings = {
+    visible: false,
+    size: 10,
+    divisions: 10,
+    colorCenterLine: '#888888',
+    colorGrid: '#444444'
+  };
 
   constructor(scene: THREE.Scene) {
     super();
@@ -38,7 +58,8 @@ export class BackgroundController extends BaseManager {
   async initialize(): Promise<void> {
     this.setupEventListeners();
     this.setBackgroundColor(this.defaultBackgroundColor);
-    console.log('BackgroundControllerを初期化しました');
+    this.initializeGrid();
+    console.log('BackgroundControllerを初期化しました（グリッド機能付き）');
   }
 
   /**
@@ -48,6 +69,128 @@ export class BackgroundController extends BaseManager {
     this.listen('background:reset', () => {
       this.resetBackground();
     });
+    
+    this.listen('grid:toggle', () => {
+      this.toggleGrid();
+    });
+  }
+
+  /**
+   * グリッドヘルパーを初期化
+   */
+  private initializeGrid(): void {
+    // GridHelperを作成（原点中心、サイズ10、10分割）
+    this.gridHelper = new THREE.GridHelper(
+      this.gridSettings.size,
+      this.gridSettings.divisions,
+      this.gridSettings.colorCenterLine,
+      this.gridSettings.colorGrid
+    );
+    
+    // グリッドを初期は非表示に設定
+    this.gridHelper.visible = this.gridVisible;
+    
+    // シーンに追加
+    this.scene.add(this.gridHelper);
+    
+    console.log('グリッドヘルパーを初期化しました', {
+      size: this.gridSettings.size,
+      divisions: this.gridSettings.divisions,
+      visible: this.gridVisible
+    });
+  }
+
+  /**
+   * グリッドの表示/非表示を切り替え
+   */
+  toggleGrid(): void {
+    if (!this.gridHelper) {
+      console.warn('グリッドヘルパーが初期化されていません');
+      return;
+    }
+    
+    this.gridVisible = !this.gridVisible;
+    this.gridHelper.visible = this.gridVisible;
+    this.gridSettings.visible = this.gridVisible;
+    
+    console.log(`グリッド表示を切り替えました: ${this.gridVisible ? '表示' : '非表示'}`);
+    
+    // グリッド状態変更イベントを発行
+    this.emit('grid:changed', {
+      visible: this.gridVisible,
+      settings: this.gridSettings
+    });
+  }
+
+  /**
+   * グリッドの表示状態を設定
+   */
+  setGridVisible(visible: boolean): void {
+    if (!this.gridHelper) {
+      console.warn('グリッドヘルパーが初期化されていません');
+      return;
+    }
+    
+    this.gridVisible = visible;
+    this.gridHelper.visible = visible;
+    this.gridSettings.visible = visible;
+    
+    console.log(`グリッド表示を設定しました: ${visible ? '表示' : '非表示'}`);
+    
+    // グリッド状態変更イベントを発行
+    this.emit('grid:changed', {
+      visible: this.gridVisible,
+      settings: this.gridSettings
+    });
+  }
+
+  /**
+   * グリッドの設定を更新
+   */
+  updateGridSettings(settings: Partial<GridSettings>): void {
+    if (!this.gridHelper) {
+      console.warn('グリッドヘルパーが初期化されていません');
+      return;
+    }
+    
+    // 設定を更新
+    this.gridSettings = { ...this.gridSettings, ...settings };
+    
+    // GridHelperを再作成
+    this.scene.remove(this.gridHelper);
+    this.gridHelper.dispose();
+    
+    this.gridHelper = new THREE.GridHelper(
+      this.gridSettings.size,
+      this.gridSettings.divisions,
+      this.gridSettings.colorCenterLine,
+      this.gridSettings.colorGrid
+    );
+    
+    this.gridHelper.visible = this.gridSettings.visible;
+    this.scene.add(this.gridHelper);
+    
+    console.log('グリッド設定を更新しました', this.gridSettings);
+    
+    // グリッド状態変更イベントを発行
+    this.emit('grid:changed', {
+      visible: this.gridVisible,
+      settings: this.gridSettings
+    });
+  }
+
+  /**
+   * 現在のグリッド設定を取得
+   */
+  getGridSettings(): GridSettings {
+    return { ...this.gridSettings };
+  }
+
+  /**
+   * グリッドの表示状態を取得
+   */
+  isGridVisible(): boolean {
+    return this.gridVisible;
   }
 
   /**
@@ -135,5 +278,12 @@ export class BackgroundController extends BaseManager {
       this.scene.background.dispose();
     }
     this.scene.background = null;
+    
+    // グリッドヘルパーの解放
+    if (this.gridHelper) {
+      this.scene.remove(this.gridHelper);
+      this.gridHelper.dispose();
+      this.gridHelper = null;
+    }
   }
 }

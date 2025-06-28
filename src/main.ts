@@ -98,6 +98,9 @@ async function main() {
             <button class="preset-color-btn" data-color="#2a2a2a">グレー</button>
           </div>
           <div class="control-group">
+            <button id="toggle-grid" class="control-btn">グリッド表示</button>
+          </div>
+          <div class="control-group">
             <button id="reset-background" class="control-btn">背景リセット</button>
           </div>
         </div>
@@ -460,6 +463,7 @@ function setupLightingHandlers(vrmViewer: VRMViewerRefactored): void {
 function setupBackgroundHandlers(vrmViewer: VRMViewerRefactored): void {
   const backgroundColorPicker = document.getElementById('background-color') as HTMLInputElement;
   const presetColorBtns = document.querySelectorAll('.preset-color-btn') as NodeListOf<HTMLButtonElement>;
+  const toggleGridBtn = document.getElementById('toggle-grid') as HTMLButtonElement;
   const resetBackgroundBtn = document.getElementById('reset-background') as HTMLButtonElement;
 
   // 背景色ピッカー
@@ -479,11 +483,31 @@ function setupBackgroundHandlers(vrmViewer: VRMViewerRefactored): void {
     });
   });
 
+  // グリッド表示切替
+  toggleGridBtn?.addEventListener('click', () => {
+    vrmViewer.toggleGrid();
+    updateGridButtonText(vrmViewer);
+  });
+
   // 背景リセット
   resetBackgroundBtn?.addEventListener('click', () => {
     vrmViewer.resetBackground();
     if (backgroundColorPicker) backgroundColorPicker.value = '#2a2a2a';
   });
+  
+  // 初期状態でボタンテキストを設定
+  updateGridButtonText(vrmViewer);
+}
+
+/**
+ * グリッドボタンのテキストを更新
+ */
+function updateGridButtonText(vrmViewer: VRMViewerRefactored): void {
+  const toggleGridBtn = document.getElementById('toggle-grid') as HTMLButtonElement;
+  if (toggleGridBtn) {
+    const isVisible = vrmViewer.isGridVisible();
+    toggleGridBtn.textContent = isVisible ? 'グリッド非表示' : 'グリッド表示';
+  }
 }
 
 /**

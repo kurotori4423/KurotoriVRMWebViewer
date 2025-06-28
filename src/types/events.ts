@@ -62,6 +62,18 @@ export interface BackgroundChangedEvent {
   colors?: string[];
 }
 
+// グリッド関連イベント
+export interface GridChangedEvent {
+  visible: boolean;
+  settings: {
+    visible: boolean;
+    size: number;
+    divisions: number;
+    colorCenterLine: string;
+    colorGrid: string;
+  };
+}
+
 // イベントマップ - 全てのイベントタイプを定義
 export interface EventMap {
   // VRM Events
@@ -90,6 +102,10 @@ export interface EventMap {
   // Background Events
   'background:changed': BackgroundChangedEvent;
   'background:reset': void;
+  
+  // Grid Events
+  'grid:changed': GridChangedEvent;
+  'grid:toggle': void;
 }
 
 // イベントリスナーの型定義

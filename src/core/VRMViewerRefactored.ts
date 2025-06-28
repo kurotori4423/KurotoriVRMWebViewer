@@ -554,6 +554,27 @@ export class VRMViewerRefactored {
     this.backgroundController.setBackgroundGradient(topColor, bottomColor);
   }
 
+  // グリッド制御メソッド
+  toggleGrid(): void {
+    this.backgroundController.toggleGrid();
+  }
+
+  setGridVisible(visible: boolean): void {
+    this.backgroundController.setGridVisible(visible);
+  }
+
+  isGridVisible(): boolean {
+    return this.backgroundController.isGridVisible();
+  }
+
+  getGridSettings() {
+    return this.backgroundController.getGridSettings();
+  }
+
+  updateGridSettings(settings: Partial<import('./BackgroundController').GridSettings>): void {
+    this.backgroundController.updateGridSettings(settings);
+  }
+
   // カメラ制御メソッド
   resetCameraToDefault(): void {
     this.camera.position.set(0, 1.5, 3);
