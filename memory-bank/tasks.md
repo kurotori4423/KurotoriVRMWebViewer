@@ -9,8 +9,9 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 
 **開始日時**: 2025年6月28日 19:21:48  
 **PLAN開始**: 2025年6月28日 19:24:37  
+**CREATIVE完了**: 2025年6月28日 19:40:54  
 **複雑度**: **Level 3** (Intermediate Feature)  
-**現在フェーズ**: **VAN** ✅ → **PLAN** ⏳  
+**現在フェーズ**: **VAN** ✅ → **PLAN** ✅ → **CREATIVE** ✅ → **IMPLEMENT** ⏳
 
 ### 🎯 **タスク概要**
 選択中モデル設定モーダルに大幅なUI改善を実装。常時表示ボタン（アイコン付き）を追加し、タブ機能で「基本」「ポーズ」「表情」に機能を整理。全削除ボタンをメイン設定ウィンドウに移動。
@@ -32,10 +33,26 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 ## 📋 **ステータス**
 - [x] 初期化完了（VAN）
 - [x] 計画策定完了（PLAN）
-- [ ] 技術検証完了
+- [x] 🎨 UI/UX設計完了（CREATIVE）
+- [x] 🏗️ アーキテクチャ設計完了（CREATIVE）
 - [ ] 実装フェーズ1: HTML構造変更
 - [ ] 実装フェーズ2: CSS・タブ機能実装  
-- [ ] 実装フェーズ3: イベントハンドラー統合・テスト
+- [ ] 実装フェーズ3: JavaScript・イベント統合・テスト
+
+## 🎨 **CREATIVE完了成果**
+
+### 🎨 UI/UX設計決定事項
+- **採用UI**: Option A - タブ最上部配置型
+- **常時表示ボタン**: 4つ（リセット・フォーカス・表示切替・削除）
+- **タブ構造**: 3つ（基本・ポーズ・表情）
+- **Design System**: glassmorphism完全準拠
+- **レスポンシブ**: 320px→768px→480px対応
+
+### 🏗️ アーキテクチャ設計決定事項
+- **採用アーキテクチャ**: Option A - 統合管理型アーキテクチャ
+- **新規コンポーネント**: TabManager + ActionButtonController
+- **統合戦略**: BaseManagerパターン継承・EventBus活用
+- **移行戦略**: 段階的移行（Phase 1-3）
 
 ## 📋 **詳細要求仕様**
 
@@ -69,12 +86,30 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 
 ### Phase 1: HTML構造再設計（2-3時間）
 #### 1.1 モーダルヘッダー拡張
-- 常時表示ボタン4つの追加
-- アイコン+ラベルレイアウト実装
+- 常時表示ボタン4つの追加（SVGアイコン埋め込み）
+- Grid レイアウト（4列）・レスポンシブ対応
 
 #### 1.2 タブ構造新規作成
-- tab-container, tab-buttons, tab-content要素
-- 3つのタブパネル構造設計
+```html
+<div class="tab-container">
+  <div class="tab-buttons" role="tablist">
+    <button class="tab-button active" role="tab" data-tab="basic">基本</button>
+    <button class="tab-button" role="tab" data-tab="pose">ポーズ</button>
+    <button class="tab-button" role="tab" data-tab="expression">表情</button>
+  </div>
+  <div class="tab-content">
+    <div class="tab-panel active" id="basic-panel" role="tabpanel">
+      <!-- 基本タブコンテンツ -->
+    </div>
+    <div class="tab-panel" id="pose-panel" role="tabpanel">
+      <!-- ポーズタブコンテンツ -->
+    </div>
+    <div class="tab-panel" id="expression-panel" role="tabpanel">
+      <!-- 表情タブコンテンツ -->
+    </div>
+  </div>
+</div>
+```
 
 #### 1.3 既存コンテンツ移行
 - 基本タブ: ルート操作・スケール関連
@@ -108,15 +143,35 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 - タブレット: レイアウト最適化
 
 ### Phase 3: JavaScript・イベント統合（3-4時間）
-#### 3.1 タブ切替ロジック
-- showTab(tabName) 関数実装
-- アクティブタブ状態管理
-- タブ連動での特殊動作（ボーン表示/非表示）
+#### 3.1 新規コンポーネント実装
+```typescript
+// TabManager.ts - タブ状態管理・切替ロジック
+export class TabManager extends BaseManager {
+  private activeTab: TabType = 'basic';
+  private tabButtons: Map<TabType, HTMLButtonElement>;
+  private tabPanels: Map<TabType, HTMLElement>;
+  
+  public switchTab(tabName: TabType): void {
+    // 1. UI更新
+    // 2. VRMコントローラー連動
+    // 3. イベント発行
+  }
+}
+
+// ActionButtonController.ts - 常時ボタン管理
+export class ActionButtonController {
+  private buttons: Map<ActionType, HTMLButtonElement>;
+  
+  public handleAction(action: ActionType): void {
+    // 各ボタンに対応したVRMコントローラー呼び出し
+  }
+}
+```
 
 #### 3.2 イベントハンドラー再構築
-- setupModelControlHandlers の大幅リファクタリング
-- 常時表示ボタンのイベント統合
-- 全削除ボタンイベント追加
+- setupNewModelControlHandlers()実装
+- TabManager・ActionButtonController統合
+- 既存setupModelControlHandlers()段階的廃止
 
 #### 3.3 既存機能統合
 - VRMRootController連動
@@ -127,35 +182,23 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 
 ### Challenge 1: 複雑なタブ連動ロジック
 - **問題**: タブ切替時のボーン表示/ルート操作モード自動切替
-- **解決策**: タブ切替関数内でVRMController APIを直接呼び出し
-- **実装**: `showTab('ポーズ') → vrmViewer.setBoneVisibility(true) + vrmViewer.setRootTransformVisible(false)`
+- **解決策**: TabManager.executeTabSpecificActions()で一元管理
+- **実装**: `switchTab('ポーズ') → vrmControllers.bone.setVisibility(true) + vrmControllers.root.setTransformMode(false)`
 
 ### Challenge 2: 既存コードの大幅リファクタリング  
 - **問題**: 現在のsetupModelControlHandlers の分解・再構築
-- **解決策**: 段階的移行（機能ごとに分離・テスト）
-- **実装**: 各タブ専用setup関数（setupBasicTab, setupPoseTab, setupExpressionTab）
+- **解決策**: 段階的移行（Phase 1-3）による低リスク実装
+- **実装**: 新旧ハンドラー並行動作→段階的テスト→完全移行
 
 ### Challenge 3: アイコンSVG統合
 - **問題**: 動的なSVG読み込み・表示状態切替アイコン
-- **解決策**: SVGをJavaScriptで直接埋め込み・状態管理でアイコン切替
-- **実装**: `getVisibilityIcon(isVisible)` 関数で動的アイコン生成
+- **解決策**: SVGをJavaScriptで直接埋め込み・ActionButtonController内で管理
+- **実装**: `updateVisibilityIcon(isVisible)` メソッドで動的アイコン生成
 
 ### Challenge 4: レスポンシブ対応
 - **問題**: タブ・ボタンの小画面対応
 - **解決策**: CSS Grid/Flexboxによるレスポンシブ設計
-- **実装**: メディアクエリでタブボタンサイズ・配置調整
-
-## 📋 **クリエイティブフェーズ要件**
-
-### UI/UX設計必須
-- **タブレイアウト設計**: アクセシブルなタブUI
-- **アイコンボタン設計**: 直感的なアイコン+ラベル配置
-- **アニメーション設計**: タブ切替・ボタンホバー効果
-
-### アーキテクチャ設計必須  
-- **タブ管理システム**: 状態管理・切替ロジック
-- **イベントフロー設計**: 既存EventBusとの統合
-- **コンポーネント分離**: タブ別ハンドラー設計
+- **実装**: 320px→768px→480px 3段階メディアクエリ
 
 ## 🔗 **依存関係**
 - **VRMRootController**: ルート操作モード切替API
@@ -222,6 +265,9 @@ _タスク完了後、内容はアーカイブに移行されクリアされま�
 
 ## 📝 **次のステップ**
 
-**NEXT MODE**: `CREATIVE` - UI/UX・アーキテクチャ設計フェーズ
+**NEXT MODE**: `IMPLEMENT` - 実装フェーズ
 
-**Memory Bank**: FEAT-012 包括的計画策定完了 ✅ 
+**Memory Bank**: FEAT-012 CREATIVE設計完了 ✅  
+**クリエイティブ文書**: 
+- `creative-uiux-FEAT-012.md` ✅
+- `creative-architecture-FEAT-012.md` ✅ 
