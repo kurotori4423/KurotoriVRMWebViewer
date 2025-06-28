@@ -449,15 +449,17 @@ export class VRMBoneController {
       // 特定のボーンのみリセット
       const bone = this.humanoidBones.get(targetBoneName);
       if (bone) {
-        bone.quaternion.set(0, 0, 0, 1);
-        console.log(`ボーン ${targetBoneName} のポーズをリセットしました`);
+        bone.position.set(0, 0, 0);     // 位置をリセット
+        bone.quaternion.set(0, 0, 0, 1); // 回転をリセット
+        console.log(`ボーン ${targetBoneName} のポーズ（位置・回転）をリセットしました`);
       }
     } else {
       // 全ボーンのリセット
       for (const bone of this.humanoidBones.values()) {
-        bone.quaternion.set(0, 0, 0, 1);
+        bone.position.set(0, 0, 0);     // 位置をリセット
+        bone.quaternion.set(0, 0, 0, 1); // 回転をリセット
       }
-      console.log('全ボーンのポーズをリセットしました');
+      console.log('全ボーンのポーズ（位置・回転）をリセットしました');
     }
     
     // VRMの更新
