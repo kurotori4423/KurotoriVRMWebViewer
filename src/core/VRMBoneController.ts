@@ -35,6 +35,9 @@ export class VRMBoneController {
   
   // UI更新コールバック（モード自動変更時に使用）
   private onTransformModeAutoChanged: ((mode: 'rotate' | 'translate') => void) | null = null;
+  
+  // アニメーションモード（VRMA再生中の排他制御）
+  private isAnimationModeActive: boolean = false;
 
   /**
    * コンストラクタ
@@ -60,6 +63,9 @@ export class VRMBoneController {
     
     // VRMルートオブジェクト変更イベントの監視
     this.setupRootTransformListener();
+    
+    // VRMAアニメーション排他制御イベントの監視
+    this.setupAnimationModeListener();
   }
 
   /**
@@ -94,6 +100,17 @@ export class VRMBoneController {
       if (event.vrm === this.currentVRM) {
         // VRMルートオブジェクトが変更されたときにボーン表示を更新
         this.updateBoneVisualizationPosition();
+      }
+    });
+  }
+
+  /**
+   * VRMAアニメーション排他制御イベントの監視を設定
+   */
+  private setupAnimationModeListener(): void {
+    eventBus.on('vrma:animation-mode-changed', (event) => {
+      if (event.vrm === this.currentVRM) {
+        this.setAnimationMode(event.isAnimationMode);
       }
     });
   }
@@ -329,9 +346,11 @@ export class VRMBoneController {
         // ボーン選択状態を更新
         this.selectedBone = bone;
         
-        // TransformControlsをボーンに適用
-        if (this.boneTransformControls) {
+        // TransformControlsをボーンに適用（アニメーションモード時は無効）
+        if (this.boneTransformControls && !this.isAnimationModeActive) {
           this.boneTransformControls.attach(bone);
+        } else if (this.isAnimationModeActive) {
+          console.log('アニメーション再生中はボーン操作ギズモは表示されません');
         }
         
         // ボーン選択状態変更コールバックを呼び出し
@@ -634,5 +653,59 @@ export class VRMBoneController {
     }
     
     console.log(`BonePointsManagerでボーン線を作成完了: ${boneConnections.length}本の線`);
+  }
+
+  /**
+   * アニメーションモードを設定（VRMA再生時の排他制御）
+   */
+  setAnimationMode(isActive: boolean): void {
+    this.isAnimationModeActive = isActive;
+    
+    if (isActive) {
+      // アニメーションモード有効: ボーン操作を無効化
+      this.disableBoneManipulation();
+      console.log('[VRMBoneController] アニメーションモード有効 - ボーン操作無効化');
+    } else {
+      // アニメーションモード無効: ボーン操作を有効化
+      this.enableBoneManipulation();
+      console.log('[VRMBoneController] アニメーションモード無効 - ボーン操作有効化');
+    }
+  }
+
+  /**
+   * 現在のアニメーションモード状態を取得
+   */
+  isAnimationMode(): boolean {
+    return this.isAnimationModeActive;
+  }
+
+  /**
+   * ボーン操作を無効化
+   */
+  private disableBoneManipulation(): void {
+    // TransformControlsを無効化
+    if (this.boneTransformControls) {
+      this.boneTransformControls.enabled = false;
+      
+      // 選択解除
+      if (this.selectedBone) {
+        this.boneTransformControls.detach();
+        this.selectedBone = null;
+        
+        // ボーン選択解除イベント発火
+        eventBus.emit('bone:selected', { boneName: null, bone: null });
+        this.onBoneSelectionChanged?.(null);
+      }
+    }
+  }
+
+  /**
+   * ボーン操作を有効化
+   */
+  private enableBoneManipulation(): void {
+    // TransformControlsを有効化
+    if (this.boneTransformControls) {
+      this.boneTransformControls.enabled = true;
+    }
   }
 }

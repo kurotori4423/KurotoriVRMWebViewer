@@ -18,6 +18,7 @@ import { BackgroundController } from './BackgroundController';
 import { VRMBoneController } from './VRMBoneController';
 import { VRMRootController } from './VRMRootController';
 import { VRMExpressionController } from './VRMExpressionController';
+import { VRMAnimationController } from './VRMAnimationController';
 
 // Event System
 import { eventBus } from '../utils/EventBus';
@@ -42,6 +43,7 @@ export class VRMViewerRefactored {
   private boneController: VRMBoneController;
   private rootController: VRMRootController;
   private expressionController: VRMExpressionController;
+  private animationController: VRMAnimationController;
 
   // Raycast for interaction
   private raycaster: THREE.Raycaster;
@@ -73,6 +75,7 @@ export class VRMViewerRefactored {
     this.boneController = new VRMBoneController(this.scene, this.camera, this.renderer, this.controls);
     this.rootController = new VRMRootController(this.scene, this.camera, this.renderer, this.controls);
     this.expressionController = new VRMExpressionController();
+    this.animationController = new VRMAnimationController();
   }
 
   /**
@@ -92,6 +95,7 @@ export class VRMViewerRefactored {
     await this.backgroundController.initialize();
     this.rootController.initialize();
     await this.expressionController.initialize();
+    await this.animationController.initialize();
 
     this.startRenderLoop();
     
@@ -938,5 +942,103 @@ export class VRMViewerRefactored {
    */
   getExpressionController(): VRMExpressionController {
     return this.expressionController;
+  }
+
+  /**
+   * VRMAnimationControllerを取得
+   */
+  getAnimationController(): VRMAnimationController {
+    return this.animationController;
+  }
+
+  /**
+   * VRMAファイルをロード
+   */
+  async loadVRMAFile(file: File): Promise<void> {
+    const selectedModel = this.getSelectedModel();
+    if (!selectedModel) {
+      throw new Error('VRMAファイルをロードするにはVRMモデルを選択してください');
+    }
+    
+    await this.animationController.loadVRMAFile(file, selectedModel);
+  }
+
+  /**
+   * アニメーション再生
+   */
+  playAnimation(): void {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      this.animationController.play(selectedModel);
+    }
+  }
+
+  /**
+   * アニメーション一時停止
+   */
+  pauseAnimation(): void {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      this.animationController.pause(selectedModel);
+    }
+  }
+
+  /**
+   * アニメーション停止
+   */
+  stopAnimation(): void {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      this.animationController.stop(selectedModel);
+    }
+  }
+
+  /**
+   * アニメーション削除
+   */
+  clearAnimation(): void {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      this.animationController.clearAnimation(selectedModel);
+    }
+  }
+
+  /**
+   * アニメーション状態取得
+   */
+  getAnimationState(): string {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      return this.animationController.getState(selectedModel);
+    }
+    return 'idle';
+  }
+
+  /**
+   * アニメーション情報取得
+   */
+  getAnimationInfo(): { fileName: string; duration: number; } | null {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      const fileInfo = this.animationController.getFileInfo(selectedModel);
+      if (fileInfo) {
+        return {
+          fileName: fileInfo.fileName,
+          duration: fileInfo.duration
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 現在のアニメーション時刻取得
+   */
+  getCurrentAnimationTime(): number {
+    const selectedModel = this.getSelectedModel();
+    if (selectedModel) {
+      return this.animationController.getCurrentTime(selectedModel);
+    }
+    return 0;
   }
 }

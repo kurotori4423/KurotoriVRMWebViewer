@@ -179,11 +179,14 @@ export class VRMManager extends BaseManager {
       this.disposeVRMResources(modelData.vrm);
     }
 
+    // 削除前にVRMインスタンスを取得
+    const removedVRM = this.vrmModels[index].vrm;
+    
     // 配列から削除
     this.vrmModels.splice(index, 1);
 
-    // イベント発火
-    this.emit('vrm:removed', { index });
+    // イベント発火（削除されたVRMインスタンスを含める）
+    this.emit('vrm:removed', { index, vrm: removedVRM });
 
     return true;
   }

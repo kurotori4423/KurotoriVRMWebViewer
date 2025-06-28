@@ -10,6 +10,7 @@ export interface VRMLoadedEvent {
 
 export interface VRMRemovedEvent {
   index: number;
+  vrm: import('@pixiv/three-vrm').VRM;
 }
 
 export interface VRMSelectedEvent {
@@ -21,6 +22,46 @@ export interface VRMRootTransformChangedEvent {
   vrm: import('@pixiv/three-vrm').VRM;
   position: import('three').Vector3;
   rotation: import('three').Euler;
+}
+
+// VRMA（VRMアニメーション）関連イベント
+export interface VRMALoadedEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  animationClip: import('three').AnimationClip;
+  fileName: string;
+  duration: number;
+}
+
+export interface VRMAPlayEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  isPlaying: boolean;
+}
+
+export interface VRMAPauseEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  isPaused: boolean;
+}
+
+export interface VRMAStopEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+}
+
+export interface VRMATimeUpdateEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  currentTime: number;
+  duration: number;
+  progress: number; // 0.0-1.0
+}
+
+export interface VRMAErrorEvent {
+  vrm: import('@pixiv/three-vrm').VRM | null;
+  error: Error;
+  context: 'load' | 'play' | 'pause' | 'stop';
+}
+
+export interface VRMAAnimationModeChangedEvent {
+  vrm: import('@pixiv/three-vrm').VRM;
+  isAnimationMode: boolean;
 }
 
 // ボーン関連イベント
@@ -120,6 +161,15 @@ export interface EventMap {
   'vrm:selected': VRMSelectedEvent;
   'vrm:selection-cleared': void;
   'vrm-root-transform-changed': VRMRootTransformChangedEvent;
+  
+  // VRMA Events
+  'vrma:loaded': VRMALoadedEvent;
+  'vrma:play': VRMAPlayEvent;
+  'vrma:pause': VRMAPauseEvent;
+  'vrma:stop': VRMAStopEvent;
+  'vrma:time-update': VRMATimeUpdateEvent;
+  'vrma:error': VRMAErrorEvent;
+  'vrma:animation-mode-changed': VRMAAnimationModeChangedEvent;
   
   // Bone Events
   'bone:selected': BoneSelectedEvent;
