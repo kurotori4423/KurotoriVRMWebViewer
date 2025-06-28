@@ -31,7 +31,7 @@ async function main() {
       
       <!-- 左サイドバー -->
       <div id="left-sidebar">
-        <h1>KurotoriVRM WebViewer</h1>
+        <h1>Kurotori VRM Web Viewer</h1>
         
         <!-- VRMファイル読み込み -->
         <div id="load-section">
