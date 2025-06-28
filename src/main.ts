@@ -275,11 +275,6 @@ async function main() {
           <div class="modal-body">
             <div class="load-options">
               <div class="load-option">
-                <h3>ローカルファイル</h3>
-                <input type="file" id="file-input" accept=".vrm" multiple />
-                <p class="note">複数のVRMファイルを同時に選択できます</p>
-              </div>
-              <div class="load-option">
                 <h3>ドラッグ&ドロップ</h3>
                 <div id="drop-zone" class="drop-zone">
                   <div class="drop-zone-content">
@@ -289,11 +284,6 @@ async function main() {
                   </div>
                 </div>
                 <p class="note">複数のVRMファイルを同時にドロップできます</p>
-              </div>
-              <div class="load-option">
-                <h3>サンプルファイル</h3>
-                <button id="load-sample-vrm0" class="control-btn">サンプル VRM0</button>
-                <button id="load-sample-vrm1" class="control-btn">サンプル VRM1</button>
               </div>
             </div>
           </div>
@@ -353,20 +343,7 @@ async function main() {
  * ファイル入力関連のイベントハンドラーを設定
  */
 function setupFileInputHandlers(vrmViewer: VRMViewerRefactored): void {
-  const fileInput = document.getElementById('file-input') as HTMLInputElement;
   const dropZone = document.getElementById('drop-zone') as HTMLElement;
-  const loadSampleVrm0Btn = document.getElementById('load-sample-vrm0') as HTMLButtonElement;
-  const loadSampleVrm1Btn = document.getElementById('load-sample-vrm1') as HTMLButtonElement;
-
-  // ローカルファイル読み込み
-  fileInput?.addEventListener('change', async (event) => {
-    const files = (event.target as HTMLInputElement).files;
-    if (files && files.length > 0) {
-      await loadFiles(files, vrmViewer);
-      // ファイル選択をリセット
-      fileInput.value = '';
-    }
-  });
 
   // ドラッグ&ドロップ機能
   if (dropZone) {
@@ -431,27 +408,6 @@ function setupFileInputHandlers(vrmViewer: VRMViewerRefactored): void {
     }
     closeModal('load-modal');
   }
-
-  // サンプルファイル読み込み
-  loadSampleVrm0Btn?.addEventListener('click', async () => {
-    try {
-      await vrmViewer.loadVRMFromURL('/samples/sample_vrm0.vrm');
-      closeModal('load-modal');
-    } catch (error) {
-      console.error('サンプルVRM0読み込みエラー:', error);
-      alert('サンプルVRM0の読み込みに失敗しました');
-    }
-  });
-
-  loadSampleVrm1Btn?.addEventListener('click', async () => {
-    try {
-      await vrmViewer.loadVRMFromURL('/samples/sample_vrm1.vrm');
-      closeModal('load-modal');
-    } catch (error) {
-      console.error('サンプルVRM1読み込みエラー:', error);
-      alert('サンプルVRM1の読み込みに失敗しました');
-    }
-  });
 }
 
 /**
