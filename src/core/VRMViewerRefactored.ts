@@ -17,6 +17,7 @@ import { SelectionManager } from './SelectionManager';
 import { BackgroundController } from './BackgroundController';
 import { VRMBoneController } from './VRMBoneController';
 import { VRMRootController } from './VRMRootController';
+import { VRMExpressionController } from './VRMExpressionController';
 
 // Event System
 import { eventBus } from '../utils/EventBus';
@@ -40,6 +41,7 @@ export class VRMViewerRefactored {
   private backgroundController: BackgroundController;
   private boneController: VRMBoneController;
   private rootController: VRMRootController;
+  private expressionController: VRMExpressionController;
 
   // Raycast for interaction
   private raycaster: THREE.Raycaster;
@@ -70,6 +72,7 @@ export class VRMViewerRefactored {
     this.backgroundController = new BackgroundController(this.scene);
     this.boneController = new VRMBoneController(this.scene, this.camera, this.renderer, this.controls);
     this.rootController = new VRMRootController(this.scene, this.camera, this.renderer, this.controls);
+    this.expressionController = new VRMExpressionController();
   }
 
   /**
@@ -88,6 +91,7 @@ export class VRMViewerRefactored {
     await this.selectionManager.initialize();
     await this.backgroundController.initialize();
     this.rootController.initialize();
+    await this.expressionController.initialize();
 
     this.startRenderLoop();
     
@@ -377,17 +381,20 @@ export class VRMViewerRefactored {
   }
 
   /**
-   * すべてのVRMモデルの更新処理
+   * VRMモデルの更新
    */
   private updateVRMModels(): void {
-    const vrmModels = this.vrmManager.getVRMModels();
-    const deltaTime = 0.016; // 約60FPS想定 (1/60)
+    const vrms = this.vrmManager.getVRMModels();
+    const deltaTime = 1 / 60; // 60FPS想定での固定deltaTime
     
-    for (const vrm of vrmModels) {
-      if (vrm.update) {
+    vrms.forEach(vrm => {
+      if (vrm && vrm.update) {
         vrm.update(deltaTime);
       }
-    }
+    });
+    
+    // 表情制御の更新
+    this.expressionController.update(deltaTime);
   }
 
   /**
@@ -857,6 +864,7 @@ export class VRMViewerRefactored {
     this.backgroundController.dispose();
     this.boneController.dispose();
     this.rootController.dispose();
+    this.expressionController.dispose();
     
     // レンダラーのクリーンアップ
     this.renderer.dispose();
@@ -920,5 +928,15 @@ export class VRMViewerRefactored {
   resetFirstModelFlag(): void {
     this.isFirstModelLoaded = false;
     console.log('🔄 最初のモデル読み込みフラグをリセットしました');
+  }
+
+  // === FEAT-011: 表情制御関連API ===
+  
+  /**
+   * 表情制御コントローラーを取得
+   * @returns VRMExpressionController
+   */
+  getExpressionController(): VRMExpressionController {
+    return this.expressionController;
   }
 }

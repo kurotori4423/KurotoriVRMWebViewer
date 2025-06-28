@@ -6,10 +6,11 @@
  * - 複数VRMモデルの管理
  * - モデルの追加・削除
  * - メタデータの正規化と管理
+ * - 表情制御システムとの連携
  */
 
 import * as THREE from 'three';
-import { VRM, VRMLoaderPlugin } from '@pixiv/three-vrm';
+import { VRM, VRMLoaderPlugin, VRMExpressionManager } from '@pixiv/three-vrm';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BaseManager } from './BaseManager';
 
@@ -198,7 +199,7 @@ export class VRMManager extends BaseManager {
         }
         if (object.material) {
           if (Array.isArray(object.material)) {
-            object.material.forEach(material => material.dispose());
+            object.material.forEach((material) => material.dispose());
           } else {
             object.material.dispose();
           }
@@ -256,6 +257,87 @@ export class VRMManager extends BaseManager {
    */
   getVRMCount(): number {
     return this.vrmModels.length;
+  }
+
+  /**
+   * 指定VRMの表情マネージャーを取得
+   * @param index VRMインデックス
+   * @returns VRMExpressionManager または null
+   */
+  getExpressionManager(index: number): VRMExpressionManager | null {
+    const modelData = this.getVRMModelData(index);
+    if (!modelData) {
+      console.warn(`VRMManager: Invalid VRM index ${index}`);
+      return null;
+    }
+
+    const expressionManager = modelData.vrm.expressionManager;
+    if (!expressionManager) {
+      console.warn(`VRMManager: No expressionManager found for VRM ${index}`);
+      return null;
+    }
+
+    return expressionManager;
+  }
+
+  /**
+   * 指定VRMの利用可能表情リストを取得
+   * @param index VRMインデックス 
+   * @returns 表情名配列
+   */
+  getExpressionList(index: number): string[] {
+    const expressionManager = this.getExpressionManager(index);
+    if (!expressionManager) {
+      return [];
+    }
+
+    try {
+      // VRMExpressionManagerから表情名を抽出
+      // @ts-ignore - VRMライブラリの内部構造にアクセス
+      const expressions = expressionManager.expressions || expressionManager._expressions;
+      if (expressions && typeof expressions === 'object') {
+        return Object.keys(expressions);
+      }
+
+      // 代替手段: 一般的な表情名リストで試行
+      const commonExpressions = [
+        'happy', 'angry', 'sad', 'relaxed', 'surprised',
+        'aa', 'ih', 'ou', 'ee', 'oh',
+        'blink', 'blinkLeft', 'blinkRight',
+        'lookUp', 'lookDown', 'lookLeft', 'lookRight'
+      ];
+
+      // 実際に設定可能な表情のみをフィルタリング
+      return commonExpressions.filter(expr => {
+        try {
+          expressionManager.setValue(expr, 0);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+    } catch (error) {
+      console.warn(`VRMManager: Failed to get expression list for VRM ${index}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * 指定VRMの表情システム情報を取得
+   * @param index VRMインデックス
+   * @returns 表情システム情報
+   */
+  getExpressionInfo(index: number): {
+    hasExpressions: boolean;
+    expressionCount: number;
+    availableExpressions: string[];
+  } {
+    const availableExpressions = this.getExpressionList(index);
+    return {
+      hasExpressions: availableExpressions.length > 0,
+      expressionCount: availableExpressions.length,
+      availableExpressions
+    };
   }
 
   /**

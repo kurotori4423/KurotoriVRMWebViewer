@@ -37,6 +37,38 @@ export interface BoneTransformModeChangedEvent {
   mode: 'rotate' | 'translate';
 }
 
+// 表情制御関連イベント
+export interface ExpressionVRMRegisteredEvent {
+  vrmIndex: number;
+  expressionCount: number;
+  availableExpressions: string[];
+}
+
+export interface ExpressionActiveChangedEvent {
+  vrmIndex: number;
+  expressionData: ExpressionData | null;
+}
+
+export interface ExpressionValueChangedEvent {
+  vrmIndex: number;
+  expressionName: string;
+  value: number;
+  timestamp: number;
+}
+
+export interface ExpressionResetEvent {
+  vrmIndex: number;
+  resetType: 'single' | 'all';
+}
+
+// 表情データインターフェース
+export interface ExpressionData {
+  readonly vrmIndex: number;
+  readonly availableExpressions: ReadonlyArray<string>;
+  readonly currentValues: ReadonlyMap<string, number>;
+  readonly hasExpressions: boolean;
+}
+
 // ライト関連イベント
 export interface LightSelectedEvent {
   isSelected: boolean;
@@ -95,6 +127,12 @@ export interface EventMap {
   'bone:transform-mode-changed': BoneTransformModeChangedEvent;
   'bone:pose-reset': void;
   
+  // Expression Events
+  'expression:vrm-registered': ExpressionVRMRegisteredEvent;
+  'expression:active-changed': ExpressionActiveChangedEvent;
+  'expression:value-changed': ExpressionValueChangedEvent;
+  'expression:reset': ExpressionResetEvent;
+  
   // Light Events
   'light:selected': LightSelectedEvent;
   'light:intensity-changed': LightIntensityChangedEvent;
@@ -120,3 +158,17 @@ export type EventListener<T> = (data: T) => void;
 
 // イベント名の型安全性を保証
 export type EventName = keyof EventMap;
+
+// 表情制御関連の型定義
+export type ExpressionName = string;
+export type ExpressionValue = number; // 0.0-1.0
+export type VRMIndex = number; // 0-4
+
+// 型ガード関数
+export function isValidExpressionValue(value: any): value is ExpressionValue {
+  return typeof value === 'number' && value >= 0 && value <= 1;
+}
+
+export function isValidVRMIndex(index: any): index is VRMIndex {
+  return typeof index === 'number' && index >= 0 && index < 5;
+}

@@ -1826,6 +1826,266 @@ h3 {
   
   .dropdown-icon {
     right: 6px;
-    font-size: 10px;
+  }
+}
+
+/* === FEAT-011: 表情制御スタイル === */
+
+/* 表情制御セクション基本スタイル */
+#expression-control-section {
+  /* modal-sectionの基本スタイルを継承 */
+}
+
+/* 表情情報表示 */
+.expression-info {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  font-size: 0.9em;
+  color: #0056b3;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .expression-info {
+    background: rgba(100, 150, 255, 0.15);
+    border: 1px solid rgba(100, 150, 255, 0.25);
+    color: #87ceeb;
+  }
+}
+
+/* 表情制御コンテナ */
+.expression-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* 表情スライダーグループ */
+.expression-slider-group {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  backdrop-filter: blur(5px);
+  transition: all 0.2s ease;
+}
+
+.expression-slider-group:hover {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .expression-slider-group {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  
+  .expression-slider-group:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 表情ヘッダー */
+.expression-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* 表情ラベル */
+.expression-label {
+  font-weight: 500;
+  font-size: 0.9em;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .expression-label {
+    color: #ffffff;
+  }
+}
+
+/* 表情値表示 */
+.expression-value {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85em;
+  color: #0056b3;
+  background: rgba(0, 123, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  min-width: 48px;
+  text-align: center;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .expression-value {
+    color: #87ceeb;
+    background: rgba(100, 150, 255, 0.15);
+    border: 1px solid rgba(100, 150, 255, 0.25);
+  }
+}
+
+/* 表情スライダー */
+.expression-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.expression-slider:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.expression-slider:focus {
+  outline: 2px solid rgba(0, 123, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Webkit スライダーthumb */
+.expression-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.expression-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.expression-slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+/* Firefox スライダーthumb */
+.expression-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.expression-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox スライダーtrack */
+.expression-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .expression-slider {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .expression-slider:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  .expression-slider::-webkit-slider-thumb {
+    background: linear-gradient(135deg, #4dabf7, #339af0);
+    border: 2px solid #2a2a2a;
+  }
+  
+  .expression-slider::-moz-range-thumb {
+    background: linear-gradient(135deg, #4dabf7, #339af0);
+    border: 2px solid #2a2a2a;
+  }
+  
+  .expression-slider::-moz-range-track {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* 表情制御なしの状態 */
+.expression-controls[style*="display: none"] + .expression-info {
+  opacity: 0.7;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .expression-slider-group {
+    padding: 10px;
+  }
+  
+  .expression-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .expression-value {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+  
+  .expression-label {
+    font-size: 0.85em;
+  }
+}
+
+@media (max-width: 480px) {
+  .expression-controls {
+    gap: 8px;
+  }
+  
+  .expression-slider-group {
+    padding: 8px;
+  }
+  
+  .expression-slider {
+    height: 8px;
+  }
+  
+  .expression-slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .expression-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
   }
 }

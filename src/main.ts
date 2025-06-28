@@ -186,6 +186,24 @@ async function main() {
             </div>
           </div>
         </div>
+        
+        <!-- 表情制御セクション -->
+        <div class="modal-section" id="expression-control-section">
+          <div class="modal-header">
+            <h3>表情制御</h3>
+          </div>
+          <div class="modal-body">
+            <div class="control-group">
+              <button id="reset-all-expressions" class="control-btn">表情リセット</button>
+            </div>
+            <div id="expression-status">
+              <p class="expression-info">モデルを選択してください</p>
+            </div>
+            <div id="expression-controls" class="expression-controls" style="display: none;">
+              <!-- 表情スライダーが動的に挿入されます -->
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- ファイル読み込みモーダル -->
@@ -254,6 +272,7 @@ async function main() {
   setupBackgroundHandlers(vrmViewer);
   setupModelControlHandlers(vrmViewer);
   setupBoneControlHandlers(vrmViewer);
+  setupExpressionControlHandlers(vrmViewer);
   setupKeyboardHandlers(vrmViewer);
   setupToolbarHandlers(vrmViewer); // UI-001: ツールバー座標系切替
   setupModalHandlers(vrmViewer);
@@ -682,6 +701,28 @@ function setupBoneControlHandlers(vrmViewer: VRMViewerRefactored): void {
 }
 
 /**
+ * 表情制御関連のイベントハンドラーを設定
+ */
+function setupExpressionControlHandlers(vrmViewer: VRMViewerRefactored): void {
+  const resetAllExpressionsBtn = document.getElementById('reset-all-expressions') as HTMLButtonElement;
+
+  // 表情リセットボタン
+  resetAllExpressionsBtn?.addEventListener('click', () => {
+    const expressionController = vrmViewer.getExpressionController();
+    if (expressionController) {
+      expressionController.resetAllExpressions();
+      
+      // UIを手動で更新
+      const selectedModel = vrmViewer.getSelectedModel();
+      const selectedIndex = vrmViewer.getSelectedModelIndex();
+      if (selectedModel && selectedIndex >= 0) {
+        updateExpressionControls(vrmViewer, selectedIndex, selectedModel);
+      }
+    }
+  });
+}
+
+/**
  * キーボードショートカットのイベントハンドラーを設定
  */
 function setupKeyboardHandlers(vrmViewer: VRMViewerRefactored): void {
@@ -817,72 +858,63 @@ function setupModalHandlers(_vrmViewer: VRMViewerRefactored): void {
  * イベントバスからのイベントを監視してUIを更新
  */
 function setupEventListeners(vrmViewer: VRMViewerRefactored): void {
-  // VRMロード時の処理
-  eventBus.on('vrm:loaded', () => {
+  // VRM選択変更時の処理
+  eventBus.on('vrm:selected', ({ index, vrm }) => {
     updateModelList(vrmViewer);
-    updateVRMCount(vrmViewer);
+    updateSelectedModelControls(vrmViewer);
+    updateExpressionControls(vrmViewer, index, vrm); // FEAT-011: 表情制御UI更新
   });
 
   // VRM削除時の処理
   eventBus.on('vrm:removed', () => {
     updateModelList(vrmViewer);
-    updateVRMCount(vrmViewer);
     updateSelectedModelControls(vrmViewer);
+    updateExpressionControls(vrmViewer, -1, null); // FEAT-011: 表情制御UI更新
   });
 
-  // VRM選択時の処理
-  eventBus.on('vrm:selected', () => {
-    updateSelectedModelControls(vrmViewer);
-    updateModelList(vrmViewer);
-  });
-
-  // VRM選択解除時の処理
+  // 選択解除時の処理
   eventBus.on('vrm:selection-cleared', () => {
     updateSelectedModelControls(vrmViewer);
-    updateModelList(vrmViewer);
+    updateExpressionControls(vrmViewer, -1, null); // FEAT-011: 表情制御UI更新
   });
 
-  // ボーン選択時の処理
+  // ボーン選択変更時の処理
   eventBus.on('bone:selected', ({ boneName }) => {
-    const selectedBoneNameSpan = document.getElementById('selected-bone-name') as HTMLSpanElement;
-    if (selectedBoneNameSpan) {
-      selectedBoneNameSpan.textContent = boneName || 'なし';
+    const selectedBoneNameElement = document.getElementById('selected-bone-name') as HTMLSpanElement;
+    if (selectedBoneNameElement) {
+      selectedBoneNameElement.textContent = boneName || 'なし';
     }
   });
 
-  // ライト選択時の処理
-  eventBus.on('light:selected', ({ isSelected }) => {
-    const selectDirectionalLightBtn = document.getElementById('select-directional-light') as HTMLButtonElement;
-    if (selectDirectionalLightBtn) {
-      selectDirectionalLightBtn.textContent = isSelected ? '選択解除' : '方向性ライト選択';
-    }
+  // ライトヘルパー表示変更時の処理
+  eventBus.on('light:visibility-changed', () => {
+    updateLightHelperButtonText(vrmViewer);
   });
 
-  // TransformMode自動変更時のUI更新処理
-  vrmViewer.setOnTransformModeAutoChanged((mode) => {
-    const boneRotateModeRadio = document.getElementById('bone-rotate-mode') as HTMLInputElement;
-    const boneTranslateModeRadio = document.getElementById('bone-translate-mode') as HTMLInputElement;
+  // VRMロード時の処理
+  eventBus.on('vrm:loaded', ({ index }) => {
+    updateVRMCount(vrmViewer);
+    updateModelList(vrmViewer);
     
-    if (mode === 'rotate') {
-      if (boneRotateModeRadio) boneRotateModeRadio.checked = true;
-      if (boneTranslateModeRadio) boneTranslateModeRadio.checked = false;
-      
-      // 視覚的フィードバック（簡易的な通知）
-      const selectedBoneNameSpan = document.getElementById('selected-bone-name') as HTMLSpanElement;
-      if (selectedBoneNameSpan) {
-        const originalText = selectedBoneNameSpan.textContent;
-        const originalColor = selectedBoneNameSpan.style.color;
-        selectedBoneNameSpan.style.color = 'orange';
-        selectedBoneNameSpan.textContent = '自動的にrotateモードに変更されました';
-        
-        // 3秒後に元に戻す
-        setTimeout(() => {
-          selectedBoneNameSpan.style.color = originalColor;
-          selectedBoneNameSpan.textContent = originalText;
-        }, 3000);
-      }
-      
-      console.log('UIを自動的にrotateモードに更新しました');
+    // 最初のVRMの場合は自動選択
+    if (vrmViewer.getVRMCount() === 1) {
+      vrmViewer.selectModel(0);
+    }
+    
+    console.log(`VRM ${index} がロードされました`);
+  });
+
+  // 表情関連イベント - FEAT-011
+  eventBus.on('expression:vrm-registered', ({ vrmIndex, expressionCount }) => {
+    console.log(`VRM ${vrmIndex}: ${expressionCount} expressions registered`);
+    if (vrmViewer.getSelectedModelIndex() === vrmIndex) {
+      updateExpressionControls(vrmViewer, vrmIndex, vrmViewer.getSelectedModel());
+    }
+  });
+  
+  eventBus.on('expression:active-changed', ({ vrmIndex }) => {
+    if (vrmViewer.getSelectedModelIndex() === vrmIndex) {
+      updateExpressionControls(vrmViewer, vrmIndex, vrmViewer.getSelectedModel());
     }
   });
 }
@@ -1097,71 +1129,150 @@ function updateLightHelperButtonText(vrmViewer: VRMViewerRefactored): void {
 }
 
 function showMetaInfoModal(vrmViewer: VRMViewerRefactored, index: number): void {
-  const models = vrmViewer.getVRMModels();
-  if (index < 0 || index >= models.length) return;
+  const modal = document.getElementById('meta-info-modal');
+  const content = document.getElementById('meta-info-content');
 
-  const vrm = models[index];
-  const vrmMeta = (vrm as any).vrmMeta;
+  if (!modal || !content) return;
 
-  if (!vrmMeta) {
-    alert('メタ情報が見つかりません');
+  const modelData = vrmViewer.getVRMModels()[index];
+  if (!modelData) return;
+
+  // メタ情報をHTMLとして構築（VRMバージョンによって分岐）
+  const vrmMeta = (modelData as any).vrmMeta;
+
+  let metaHtml = '';
+  
+  if (vrmMeta) {
+    metaHtml = `
+      <div class="meta-group">
+        <h3>基本情報</h3>
+        <p><strong>名前:</strong> ${vrmMeta.name || 'Unknown'}</p>
+        <p><strong>作者:</strong> ${Array.isArray(vrmMeta.authors) ? vrmMeta.authors.join(', ') : (vrmMeta.authors || 'Unknown')}</p>
+        <p><strong>バージョン:</strong> ${vrmMeta.version || 'Unknown'}</p>
+        <p><strong>VRM仕様バージョン:</strong> ${vrmMeta.detectedVersion || 'Unknown'}</p>
+      </div>
+      
+      <div class="meta-group">
+        <h3>ライセンス情報</h3>
+        <p><strong>ライセンス:</strong> ${vrmMeta.licenseName || vrmMeta.licenseUrl || 'Unknown'}</p>
+        <p><strong>商用利用:</strong> ${vrmMeta.commercialUssageName || vrmMeta.commercialUsage || 'Unknown'}</p>
+        <p><strong>暴力表現:</strong> ${vrmMeta.violentUssageName || (vrmMeta.allowExcessivelyViolentUsage ? 'Allow' : 'Disallow')}</p>
+        <p><strong>性的表現:</strong> ${vrmMeta.sexualUssageName || (vrmMeta.allowExcessivelySexualUsage ? 'Allow' : 'Disallow')}</p>
+      </div>
+      
+      <div class="meta-group">
+        <h3>連絡先・参考情報</h3>
+        <p><strong>連絡先:</strong> ${vrmMeta.contactInformation || 'なし'}</p>
+        <p><strong>参考URL:</strong> ${Array.isArray(vrmMeta.references) ? vrmMeta.references.join(', ') : (vrmMeta.references || 'なし')}</p>
+      </div>
+    `;
+
+    // サムネイル画像がある場合は表示
+    if (vrmMeta.thumbnailImage) {
+      metaHtml = `
+        <div class="meta-group">
+          <h3>サムネイル</h3>
+          <img src="${vrmMeta.thumbnailImage}" alt="VRM サムネイル" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+        </div>
+      ` + metaHtml;
+    }
+  } else {
+    metaHtml = '<p>メタ情報が取得できませんでした。</p>';
+  }
+
+  content.innerHTML = metaHtml;
+  showModal('meta-info-modal');
+}
+
+// === FEAT-011: 表情制御UI関数群 ===
+
+/**
+ * 表情制御UIを更新
+ * @param vrmViewer VRMViewerインスタンス
+ * @param index 選択VRMインデックス 
+ * @param vrm 選択VRMオブジェクト
+ */
+function updateExpressionControls(vrmViewer: VRMViewerRefactored, index: number, vrm: any): void {
+  const statusElement = document.getElementById('expression-status');
+  const controlsElement = document.getElementById('expression-controls');
+  
+  if (!statusElement || !controlsElement) return;
+
+  // VRMが選択されていない場合
+  if (index === -1 || !vrm) {
+    statusElement.innerHTML = '<p class="expression-info">モデルを選択してください</p>';
+    controlsElement.style.display = 'none';
+    controlsElement.innerHTML = '';
     return;
   }
 
-  const metaInfoContent = document.getElementById('meta-info-content');
-  if (!metaInfoContent) return;
+  const expressionController = vrmViewer.getExpressionController();
+  const expressionData = expressionController.getActiveExpressionData();
 
-  let html = '<div class="meta-info-layout">';
-  
-  // サムネイル（左側）
-  html += `<div class="meta-thumbnail-section">`;
-  if (vrmMeta.thumbnailImage) {
-    html += `<img src="${vrmMeta.thumbnailImage}" alt="VRM thumbnail" class="meta-thumbnail" />`;
-  } else {
-    html += `<div class="meta-thumbnail-placeholder">サムネイルなし</div>`;
+  // 表情データが利用できない場合
+  if (!expressionData || !expressionData.hasExpressions) {
+    statusElement.innerHTML = '<p class="expression-info">このモデルに表情データはありません</p>';
+    controlsElement.style.display = 'none';
+    controlsElement.innerHTML = '';
+    return;
   }
-  html += `</div>`;
 
-  // 基本情報（右側）
-  html += `<div class="meta-info-details">`;
-  html += `<div class="meta-info-section">`;
-  html += `<h3>基本情報</h3>`;
-  html += `<div class="meta-info-field"><strong>名前:</strong> ${vrmMeta.name || 'Unknown'}</div>`;
-  html += `<div class="meta-info-field"><strong>作者:</strong> ${vrmMeta.authors?.join(', ') || 'Unknown'}</div>`;
-  html += `<div class="meta-info-field"><strong>バージョン:</strong> ${vrmMeta.version || 'Unknown'}</div>`;
-  html += `<div class="meta-info-field"><strong>VRMバージョン:</strong> ${vrmMeta.detectedVersion || 'Unknown'}</div>`;
-  html += `</div>`;
+  // 表情制御UI表示
+  statusElement.innerHTML = `<p class="expression-info">利用可能表情: ${expressionData.availableExpressions.length}個</p>`;
+  controlsElement.style.display = 'block';
 
-  // ライセンス情報
-  html += `<div class="meta-info-section">`;
-  html += `<h3>ライセンス情報</h3>`;
+  // 表情スライダーを生成
+  controlsElement.innerHTML = '';
+  expressionData.availableExpressions.forEach(expressionName => {
+    const sliderGroup = createExpressionSlider(expressionName, vrmViewer);
+    controlsElement.appendChild(sliderGroup);
+  });
+}
+
+/**
+ * 表情スライダー要素を作成
+ * @param expressionName 表情名
+ * @param vrmViewer VRMViewerインスタンス
+ * @returns HTMLElement
+ */
+function createExpressionSlider(expressionName: string, vrmViewer: VRMViewerRefactored): HTMLElement {
+  const sliderGroup = document.createElement('div');
+  sliderGroup.className = 'expression-slider-group';
   
-  if (vrmMeta.detectedVersion?.startsWith('1.')) {
-    // VRM1系の詳細な利用制限情報
-    html += `<div class="meta-info-field"><strong>アバター使用許可:</strong> ${vrmMeta.avatarPermission || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>商用利用:</strong> ${vrmMeta.commercialUsage || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>クレジット表記:</strong> ${vrmMeta.creditNotation || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>再配布:</strong> ${vrmMeta.allowRedistribution ? '許可' : '禁止'}</div>`;
-    html += `<div class="meta-info-field"><strong>改変:</strong> ${vrmMeta.modification || 'Unknown'}</div>`;
-  } else {
-    // VRM0系の情報
-    html += `<div class="meta-info-field"><strong>許可されたユーザー:</strong> ${vrmMeta.allowedUserName || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>暴力的表現:</strong> ${vrmMeta.violentUssageName || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>性的表現:</strong> ${vrmMeta.sexualUssageName || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>商用利用:</strong> ${vrmMeta.commercialUssageName || 'Unknown'}</div>`;
-    html += `<div class="meta-info-field"><strong>ライセンス:</strong> ${vrmMeta.licenseName || 'Unknown'}</div>`;
+  const expressionController = vrmViewer.getExpressionController();
+  const currentValue = expressionController.getExpression(expressionName) || 0;
+
+  sliderGroup.innerHTML = `
+    <div class="expression-header">
+      <label class="expression-label">${expressionName}</label>
+      <span class="expression-value">${currentValue.toFixed(2)}</span>
+    </div>
+    <input 
+      type="range" 
+      class="expression-slider" 
+      min="0" 
+      max="1" 
+      step="0.01" 
+      value="${currentValue}"
+      data-expression="${expressionName}"
+    />
+  `;
+
+  // スライダーイベントリスナー設定
+  const slider = sliderGroup.querySelector('.expression-slider') as HTMLInputElement;
+  const valueDisplay = sliderGroup.querySelector('.expression-value') as HTMLSpanElement;
+
+  if (slider && valueDisplay) {
+    slider.addEventListener('input', () => {
+      const value = parseFloat(slider.value);
+      valueDisplay.textContent = value.toFixed(2);
+      
+      // リアルタイム表情更新
+      expressionController.setExpression(expressionName, value);
+    });
   }
-  
-  if (vrmMeta.licenseUrl) {
-    html += `<div class="meta-info-field"><strong>ライセンスURL:</strong> <a href="${vrmMeta.licenseUrl}" target="_blank">${vrmMeta.licenseUrl}</a></div>`;
-  }
-  
-  html += `</div>`;
-  html += `</div>`;
-  html += `</div>`;
 
-  metaInfoContent.innerHTML = html;
-  showModal('meta-info-modal');
+  return sliderGroup;
 }
 
 // アプリケーションを開始
