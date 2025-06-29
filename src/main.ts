@@ -44,6 +44,16 @@ async function main() {
       <div id="left-sidebar">
         <h1>Kurotori VRM Web Viewer</h1>
         
+        <!-- ヘルプボタン -->
+        <div id="help-section">
+          <button id="open-help-modal" class="help-btn">
+            <svg class="help-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+              <path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/>
+            </svg>
+            ヘルプ
+          </button>
+        </div>
+        
         <!-- VRMファイル読み込み -->
         <div id="load-section">
           <button id="open-load-modal" class="primary-btn">VRMファイル読み込み</button>
@@ -311,6 +321,121 @@ async function main() {
           <div class="modal-body">
             <div id="meta-info-content">
               <!-- メタ情報がここに動的に挿入されます -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ヘルプモーダル -->
+      <div id="help-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>🆘 ヘルプ - VRM Web Viewer 操作ガイド</h2>
+            <span class="close" id="help-modal-close">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div id="help-content">
+              
+              <!-- 基本操作セクション -->
+              <div class="help-section">
+                <h3>📖 基本操作</h3>
+                <div class="help-subsection">
+                  <h4>🗃️ VRMファイル読み込み</h4>
+                  <ul>
+                    <li><strong>ファイル選択</strong>: 「VRMファイル読み込み」ボタンをクリック</li>
+                    <li><strong>ドラッグ&ドロップ</strong>: モーダル内のドロップゾーンにVRMファイルをドロップ</li>
+                    <li><strong>複数読み込み</strong>: 最大5体まで同時読み込み可能</li>
+                  </ul>
+                </div>
+                
+                <div class="help-subsection">
+                  <h4>🎮 モデル選択・操作</h4>
+                  <ul>
+                    <li><strong>マウス選択</strong>: 3Dビューで直接モデルをクリック</li>
+                    <li><strong>リスト選択</strong>: 左サイドバーのモデル一覧から選択</li>
+                    <li><strong>スケール調整</strong>: 選択中モデル設定の「基本」タブでスケール変更</li>
+                    <li><strong>表示/非表示</strong>: アクションボタンで表示切替</li>
+                  </ul>
+                </div>
+                
+                <div class="help-subsection">
+                  <h4>🎭 表情制御</h4>
+                  <ul>
+                    <li><strong>表情タブ</strong>: 選択中モデル設定の「表情」タブを開く</li>
+                    <li><strong>スライダー操作</strong>: 各表情の強度を0-1で調整</li>
+                    <li><strong>表情リセット</strong>: 「表情リセット」ボタンで初期状態に戻す</li>
+                  </ul>
+                </div>
+                
+                <div class="help-subsection">
+                  <h4>🤸 ポーズ・アニメーション</h4>
+                  <ul>
+                    <li><strong>ボーン表示</strong>: 「ポーズ」タブの「ボーン表示切替」で骨格表示</li>
+                    <li><strong>VRMA再生</strong>: VRMAファイルをドラッグ&ドロップで自動再生</li>
+                    <li><strong>操作モード</strong>: 回転・移動モードの切替可能</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- キーボードショートカットセクション -->
+              <div class="help-section">
+                <h3>⌨️ キーボードショートカット</h3>
+                <div class="shortcuts-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>キー</th>
+                        <th>機能</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><kbd>1</kbd> - <kbd>5</kbd></td>
+                        <td>モデル1-5を直接選択</td>
+                      </tr>
+                      <tr>
+                        <td><kbd>←</kbd> <kbd>→</kbd></td>
+                        <td>前/次のモデルを選択</td>
+                      </tr>
+                      <tr>
+                        <td><kbd>Esc</kbd></td>
+                        <td>モデル選択を解除</td>
+                      </tr>
+                      <tr>
+                        <td><kbd>R</kbd></td>
+                        <td>カメラをデフォルト位置にリセット</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <!-- リンクセクション -->
+              <div class="help-section">
+                <h3>🔗 リンク・情報</h3>
+                <div class="help-links">
+                  <a href="https://github.com/kurotori4423/KurotoriVRMWebViewer" target="_blank" rel="noopener noreferrer" class="help-link">
+                    <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub リポジトリ
+                  </a>
+                  <p class="help-description">
+                    バグ報告や機能要望はIssueまでお願いします。
+                  </p>
+                </div>
+              </div>
+              
+              <!-- 対応フォーマット -->
+              <div class="help-section">
+                <h3>📋 対応フォーマット</h3>
+                <ul>
+                  <li><strong>VRM 0.x</strong>: 従来のVRM形式</li>
+                  <li><strong>VRM 1.0</strong>: 最新のVRM形式</li>
+                  <li><strong>VRMA</strong>: VRMアニメーションファイル</li>
+                </ul>
+              </div>
+              
             </div>
           </div>
         </div>
@@ -1224,6 +1349,9 @@ function setupModalHandlers(_vrmViewer: VRMViewerRefactored): void {
   const modalCloseBtn = document.getElementById('modal-close') as HTMLSpanElement;
   const metaModalCloseBtn = document.getElementById('meta-modal-close') as HTMLSpanElement;
   const modelModalCloseBtn = document.getElementById('model-modal-close') as HTMLSpanElement;
+  // UI-002: ヘルプモーダル用のボタン要素を取得
+  const openHelpModalBtn = document.getElementById('open-help-modal') as HTMLButtonElement;
+  const helpModalCloseBtn = document.getElementById('help-modal-close') as HTMLSpanElement;
 
   openLoadModalBtn?.addEventListener('click', () => {
     showModal('load-modal');
@@ -1242,6 +1370,15 @@ function setupModalHandlers(_vrmViewer: VRMViewerRefactored): void {
     if (selectedModelModal) {
       selectedModelModal.style.display = 'none';
     }
+  });
+
+  // UI-002: ヘルプモーダル用のイベントハンドラー
+  openHelpModalBtn?.addEventListener('click', () => {
+    showModal('help-modal');
+  });
+
+  helpModalCloseBtn?.addEventListener('click', () => {
+    closeModal('help-modal');
   });
 
   // モーダル背景クリックで閉じる
