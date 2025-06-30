@@ -73,6 +73,30 @@ body {
   width: 320px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+  
+  /* スクロールバーを角丸内側に配置 */
+  scrollbar-gutter: stable;
+}
+
+/* 左サイドバーのカスタムスクロールバー */
+#left-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+#left-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  margin: 6px 3px;
+}
+
+#left-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+#left-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -80,6 +104,19 @@ body {
     background: rgba(26, 26, 26, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* 左サイドバー - ダークモード対応スクロールバー */
+  #left-sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  #left-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  #left-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -182,6 +219,45 @@ body {
   overflow-y: auto;
   transform: scale(1);
   transition: transform 0.3s ease;
+  
+  /* スクロールバーを角丸内側に配置 */
+  scrollbar-gutter: stable;
+}
+
+/* モーダルコンテンツのカスタムスクロールバー */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 8px 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .modal-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 .modal-overlay.hidden .modal-content {
@@ -258,6 +334,45 @@ body {
   overflow-y: auto;
   transform: translateY(0);
   transition: transform 0.3s ease, opacity 0.3s ease;
+  
+  /* スクロールバーを角丸内側に配置 */
+  scrollbar-gutter: stable;
+}
+
+/* 詳細ウィンドウのカスタムスクロールバー */
+.detail-window::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-window::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  margin: 6px 3px;
+}
+
+.detail-window::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.detail-window::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 詳細ウィンドウ - ダークモード対応スクロールバー */
+@media (prefers-color-scheme: dark) {
+  .detail-window::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .detail-window::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .detail-window::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 .detail-window.hidden {
@@ -1266,6 +1381,30 @@ h3 {
   transform: scale(1);
   transition: transform 0.3s ease;
   z-index: 10001; /* モーダルコンテンツも最優先 */
+  
+  /* スクロールバーを角丸内側に配置 */
+  scrollbar-gutter: stable;
+}
+
+/* リファクタリング版モーダルのカスタムスクロールバー */
+.modal .modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal .modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 8px 4px;
+}
+
+.modal .modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .modal .modal-header {
@@ -1402,6 +1541,19 @@ h3 {
 
   .modal .note {
     color: #ccc;
+  }
+  
+  /* リファクタリング版モーダル - ダークモード対応スクロールバー */
+  .modal .modal-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .modal .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .modal .modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -1720,6 +1872,30 @@ h3 {
   overflow-y: auto;
   z-index: 1000;
   transition: all 0.3s ease;
+  
+  /* スクロールバーを角丸内側に配置 */
+  scrollbar-gutter: stable;
+}
+
+/* 右下モーダルのカスタムスクロールバー */
+.bottom-right-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bottom-right-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  margin: 6px 3px;
+}
+
+.bottom-right-modal::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.bottom-right-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .bottom-right-modal .modal-header {
@@ -1869,6 +2045,19 @@ h3 {
   
   .bottom-right-modal p {
     color: #ccc;
+  }
+  
+  /* 右下モーダル - ダークモード対応スクロールバー */
+  .bottom-right-modal::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .bottom-right-modal::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .bottom-right-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 
